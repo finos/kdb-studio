@@ -303,9 +303,9 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
                 refreshServers();
             }
         });
-        tglBtnBoxTree = new JToggleButton(Util.TEXT_TREE_ICON);
+        tglBtnBoxTree = new JToggleButton(Util.SERVER_TREE_ICON);
         tglBtnBoxTree.setToolTipText("<html>Toggle tree/list <small>" + Util.getAcceleratorString(TREE_VIEW_KEYSTROKE) +"</small></html>");
-        tglBtnBoxTree.setSelectedIcon(Util.TEXT_ICON);
+        tglBtnBoxTree.setSelectedIcon(Util.SERVER_LIST_ICON);
         tglBtnBoxTree.setFocusable(false);
         tglBtnBoxTree.addActionListener(e->actionToggleButton());
         JToolBar toolbar = new JToolBar();
