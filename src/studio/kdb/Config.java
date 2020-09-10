@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class Config {
     private static final Logger log = LogManager.getLogger();
@@ -374,6 +377,148 @@ public class Config {
         } catch (IOException e) {
             log.error("Can't save configuration to {}", filename, e);
         }
+    }
+
+    public Object serverTreeToObj(ServerTreeNode root) {
+        //converts the server tree to an object that can be saved into JSON
+        LinkedHashMap<String,Object> result = new LinkedHashMap<>();
+        result.put("name", root.getName());
+        if(root.isFolder()) {
+            ArrayList<Object> children = new ArrayList<>();
+            result.put("children", children);
+            for (Enumeration<ServerTreeNode> e = root.children(); e.hasMoreElements();) {
+                children.add(serverTreeToObj(e.nextElement()));
+            }
+        }
+        return result;
+    }
+
+    public void exportServerListToJSON(File f) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        Map<String,Object> cfg = new LinkedHashMap<>();
+        ArrayList<Map<String,Object>> svs = new ArrayList<>();
+        for (Server s : servers.values()) {
+            LinkedHashMap<String,Object> ps = new LinkedHashMap<>();
+            svs.add(ps);
+            ps.put("name", s.getName());
+            ps.put("host", s.getHost());
+            ps.put("port", s.getPort());
+            ps.put("username", s.getUsername());
+            ps.put("password", s.getPassword());
+            ps.put("useTls", s.getUseTLS());
+            ps.put("authMethod", s.getAuthenticationMechanism());
+            ArrayList<Integer> color = new ArrayList<>(3);
+            Color bgc = s.getBackgroundColor();
+            color.add(bgc.getRed());
+            color.add(bgc.getGreen());
+            color.add(bgc.getBlue());
+            ps.put("color", color);
+        }
+        cfg.put("servers",svs);
+        cfg.put("serverTree", serverTreeToObj(serverTree));
+        try {
+            FileWriter sw = new FileWriter(f);
+            objectMapper.writeValue(sw, cfg);
+        } catch(IOException e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    private void importServerTreeFromJSON(HashMap<String, Server> serverMap, boolean isRoot, JsonNode jn, ServerTreeNode tn) {
+        if (jn.has("children")) {   //is a folder
+            ServerTreeNode ntn = tn;
+            if (!isRoot) {
+                String folderName = jn.get("name").asText("");
+                ntn = tn.getChild(folderName);
+                if (ntn == null) {
+                    ntn = new ServerTreeNode(folderName);
+                    tn.add(ntn);
+                }
+            };
+            JsonNode children = jn.get("children");
+            if (children.isArray()) {
+                for (JsonNode child : (Iterable<JsonNode>) ()->children.elements()) {
+                    importServerTreeFromJSON(serverMap, false, child, ntn);
+                }
+            }
+        } else {
+            if (jn.has("name")) {
+                String name = jn.get("name").asText("");
+                if (name.length() > 0) {
+                    if (serverMap.containsKey(name)) {
+                        Server s = serverMap.get(name);
+                        s.setFolder(tn);
+                        addServer(s);
+                        serverMap.remove(s);
+                    }
+                }
+            }
+        }
+    }
+
+    public String importServerListFromJSON(File f) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        StringBuilder sb = new StringBuilder();
+        ArrayList<String> alreadyExist = new ArrayList<>();
+        ArrayList<Integer> noName = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(f);
+            if (!root.isObject()) return "JSON root node is not an object";
+            if (!root.has("servers")) return "JSON root node doesn't have a \"servers\" property";
+            if (!root.has("serverTree")) return "JSON root node doesn't have a \"serverTree\" property";
+            JsonNode serversNode = root.get("servers");
+            JsonNode serverTreeNode = root.get("serverTree");
+            if (!serversNode.isArray()) return "\"servers\" node is not an array";
+            HashSet<String> existingServers = new HashSet<>();
+            for (Server s : servers.values()) existingServers.add(s.getName());
+            HashMap<String, Server> serverMap = new HashMap<>();
+            int i=0;
+            for (JsonNode serverNode : (Iterable<JsonNode>) ()->serversNode.elements()) {
+                if (!serverNode.isObject()) {
+                    sb.append("Non-object found inside \"servers\" array at index "+i+"\n");
+                } else if (!serverNode.has("name")) {
+                    sb.append("Server at index "+i+" has no name\n");
+                } else {
+                    String sname = serverNode.get("name").asText();
+                    if (sname.length() == 0) {
+                        noName.add(i);
+                    } else if (existingServers.contains(sname)) {
+                        alreadyExist.add(sname);
+                    } else {
+                        Server s = new Server();
+                        s.setName(sname);
+                        if (serverNode.has("host")) s.setHost(serverNode.get("host").asText(""));
+                        if (serverNode.has("port")) s.setPort(serverNode.get("port").asInt(0));
+                        if (serverNode.has("username")) s.setUsername(serverNode.get("username").asText(""));
+                        if (serverNode.has("password")) s.setPassword(serverNode.get("password").asText(""));
+                        if (serverNode.has("useTls")) s.setUseTLS(serverNode.get("useTls").asBoolean(false));
+                        if (serverNode.has("authMethod")) s.setAuthenticationMechanism(serverNode.get("authMethod").asText(""));
+                        if (serverNode.has("color")) {
+                            JsonNode color = serverNode.get("color");
+                            if (color.isArray() && color.size() >= 3) {
+                                s.setBackgroundColor(new Color(color.get(0).asInt(255),color.get(1).asInt(255),color.get(2).asInt(255)));
+                            }
+                        }
+                        serverMap.put(sname, s);
+                    }
+                }
+                ++i;
+            }
+            if (serverTreeNode.isObject()) {
+                importServerTreeFromJSON(serverMap, true, serverTreeNode, serverTree);
+            }
+            if (0<noName.size()) sb.append("The servers at the following indices have no names: "+noName);
+            if (0<alreadyExist.size()) sb.append("The following servers already exist and were not imported: "+alreadyExist);
+        } catch(IOException e) {
+            return e.toString();
+        }
+        int i = 0;
+        final int wordLength = 150;
+        while (i + wordLength < sb.length() && (i = sb.lastIndexOf(" ", i + wordLength)) != -1) {
+            sb.replace(i, i + 1, "\n");
+        }
+        return sb.toString();
     }
 
     // "".split(",") return {""}; we need to get zero length array

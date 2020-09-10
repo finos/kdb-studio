@@ -177,4 +177,8 @@ public class ServerTreeNode extends DefaultMutableTreeNode {
     public String fullPath() {
         return Stream.of(getPath()).skip(1).map(n->n.toString()).collect(Collectors.joining("/"));
     }
+
+    public String getName() {
+        return isFolder() ? getFolder() : getServer().getName();
+    }
 }
