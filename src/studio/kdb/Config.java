@@ -218,9 +218,17 @@ public class Config {
         save();
     }
 
+    public String getFontName() {
+        return p.getProperty("font.name", "Monospaced");
+    }
+
+    public int getFontSize() {
+        return Integer.parseInt(p.getProperty("font.size","14"));
+    }
+
     public Font getFont() {
-        String name = p.getProperty("font.name", "Monospaced");
-        int  size = Integer.parseInt(p.getProperty("font.size","14"));
+        String name = getFontName();
+        int  size = getFontSize();
 
         Font f = new Font(name, Font.PLAIN, size);
         setFont(f);
