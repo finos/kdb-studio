@@ -218,6 +218,22 @@ public class Config {
         save();
     }
 
+    public String getLineEnding() {
+        String r = p.getProperty("lineEnding", "");
+        if (r.length() == 0) {
+            String ls = System.getProperty("line.separator");
+            if (ls.equals("\n")) r = "LF";
+            else if (ls.equals("\r\n")) r = "CRLF";
+            else throw new RuntimeException("unknown line separator setting");
+        }
+        return r;
+    }
+
+    public void setLineEnding(String v) {
+        p.setProperty("lineEnding", v);
+        save();
+    }
+
     public String getFontName() {
         return p.getProperty("font.name", "Monospaced");
     }
