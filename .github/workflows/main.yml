@@ -13,7 +13,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build-kdb:
+  build-kdb-studio:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -23,10 +23,6 @@ jobs:
     - name: Project checkout
       uses: actions/checkout@v2
 
-    # Runs a single command using the runners shell
-    - name: Run a one-line script
-      run: echo Hello, world!
-
     - name: Setup java
       uses: actions/setup-java@v1
       with:
@@ -34,4 +30,19 @@ jobs:
     - name: Build KDB Studio (with Gradle)
       uses: eskatos/gradle-command-action@v1
       with:
-        arguments: build
+        arguments: install
+    # Runs a single command using the runners shell
+    - name: Show workspace
+      run: find
+    - name: Make release archive
+      run: cd build/install; zip -r studio *
+    - name: Upload release
+      if: github.event_name == 'push'
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Latest Build"
+        files: |
+          build/install/studio.zip
