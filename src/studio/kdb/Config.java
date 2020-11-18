@@ -636,7 +636,9 @@ public class Config {
     }
 
     public String getDefaultAuthMechanism() {
-        return p.getProperty("auth", DefaultAuthenticationMechanism.NAME);
+        String result = p.getProperty("auth", null);
+        if (result == null) result = System.getenv().getOrDefault("KDB_STUDIO_AUTH_METHOD", DefaultAuthenticationMechanism.NAME);
+        return result;
     }
 
     public void setDefaultAuthMechanism(String authMechanism) {
@@ -702,7 +704,9 @@ public class Config {
         String username = p.getProperty("server." + key + ".user", "");
         String password = p.getProperty("server." + key + ".password", "");
         String backgroundColor = p.getProperty("server." + key + ".backgroundColor", "FFFFFF");
-        String authenticationMechanism = p.getProperty("server." + key + ".authenticationMechanism", DefaultAuthenticationMechanism.NAME);
+        String authenticationMechanism = p.getProperty("server." + key + ".authenticationMechanism", null);
+        if (authenticationMechanism == null)
+            authenticationMechanism = System.getenv().getOrDefault("KDB_STUDIO_AUTH_METHOD", DefaultAuthenticationMechanism.NAME);
         boolean useTLS = Boolean.parseBoolean(p.getProperty("server." + key + ".useTLS", "false"));
         Color c = new Color(Integer.parseInt(backgroundColor, 16));
         return new Server("", host, port, username, password, c, authenticationMechanism, useTLS);
