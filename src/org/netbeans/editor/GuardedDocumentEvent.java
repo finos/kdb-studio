@@ -29,8 +29,8 @@ public class GuardedDocumentEvent extends BaseDocumentEvent {
     static final long serialVersionUID =-9204897347010955248L;
 
     public GuardedDocumentEvent(GuardedDocument doc, int offset, int length,
-                                DocumentEvent.EventType type) {
-        super(doc, offset, length, type);
+                                DocumentEvent.EventType type, BaseDocumentEvent previous) {
+        super(doc, offset, length, type, previous);
     }
 
     public void undo() throws CannotUndoException {

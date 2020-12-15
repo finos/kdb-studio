@@ -194,6 +194,12 @@ public class BaseKit extends DefaultEditorKit
     /** Toggle visibility of line numbers*/
     public static final String toggleLineNumbersAction = "toggle-line-numbers";
 
+    /** Swap line with line above */
+    public static final String swapLineUpAction = "swap-line-up"; // NOI18N
+
+    /** Swap line with line below */
+    public static final String swapLineDownAction = "swap-line-down"; // NOI18N
+
     private static final int KIT_CNT_PREALLOC = 57;
 
     static final long serialVersionUID = -8570495408376659348L;
@@ -566,6 +572,8 @@ public class BaseKit extends DefaultEditorKit
             new InsertTabAction(),
             new DeleteCharAction(deletePrevCharAction, false),
             new DeleteCharAction(deleteNextCharAction, true),
+            new DeleteWordAction(deletePrevWordAction, false),
+            new DeleteWordAction(deleteNextWordAction, true),
             new ReadOnlyAction(),
             new WritableAction(),
             cutActionDef,
@@ -605,6 +613,8 @@ public class BaseKit extends DefaultEditorKit
             new SelectWordAction(),
             new SelectLineAction(),
             new SelectAllAction(),
+            new SwapLineAction(swapLineUpAction, false),
+            new SwapLineAction(swapLineDownAction, true),
             new ActionFactory.RemoveTabAction(),
             new ActionFactory.RemoveWordAction(),
             new ActionFactory.RemoveLineBeginAction(),
@@ -1263,6 +1273,144 @@ public class BaseKit extends DefaultEditorKit
                         else
                         { // remove previous char
                             doc.remove(dot - 1, 1);
+                        }
+                    }
+                }
+                catch (BadLocationException e)
+                {
+                    target.getToolkit().beep();
+                }
+            }
+        }
+    }
+
+    /** Remove previous or next word */
+    public static class DeleteWordAction extends BaseAction
+    {
+
+        boolean nextWord;
+
+        static final long serialVersionUID = -4321971925753148557L;
+
+        public DeleteWordAction(String nm, boolean nextWord)
+        {
+            super(nm, MAGIC_POSITION_RESET | ABBREV_RESET | WORD_MATCH_RESET);
+            this.nextWord = nextWord;
+        }
+
+        public void actionPerformed(ActionEvent evt, JTextComponent target)
+        {
+            if (target != null)
+            {
+                if (!target.isEditable() || !target.isEnabled())
+                {
+                    target.getToolkit().beep();
+                    return;
+                }
+
+                try
+                {
+                    Document doc = target.getDocument();
+                    Caret caret = target.getCaret();
+                    int dot = caret.getDot();
+                    int mark = caret.getMark();
+                    if (dot != mark)
+                    { // remove selection
+                        doc.remove(Math.min(dot, mark), Math.abs(dot - mark));
+                    }
+                    dot = caret.getDot();
+                    if (nextWord)
+                    { // remove next word
+                        int nextDot = Utilities.getNextWord(target, dot);
+                        doc.remove(dot, nextDot-dot);
+                    }
+                    else
+                    { // remove previous word
+                        int prevDot = Utilities.getPreviousWord(target, dot);
+                        doc.remove(prevDot, dot-prevDot);
+                    }
+                }
+                catch (BadLocationException e)
+                {
+                    target.getToolkit().beep();
+                }
+            }
+        }
+    }
+
+    /** Swap current line with the line above or below */
+    public static class SwapLineAction extends BaseAction
+    {
+
+        boolean nextLine;
+
+        static final long serialVersionUID = -4321971925753148558L;
+
+        public SwapLineAction(String nm, boolean nextLine)
+        {
+            super(nm, MAGIC_POSITION_RESET | ABBREV_RESET | WORD_MATCH_RESET);
+            this.nextLine = nextLine;
+        }
+
+        public void actionPerformed(ActionEvent evt, JTextComponent target)
+        {
+            if (target != null)
+            {
+                if (!target.isEditable() || !target.isEnabled())
+                {
+                    target.getToolkit().beep();
+                    return;
+                }
+
+                try
+                {
+                    Document doc = target.getDocument();
+                    Caret caret = target.getCaret();
+                    int dot = caret.getDot();
+                    int mark = caret.getMark();
+                    int lineStartPos = Utilities.getRowStart(target, Math.min(mark, dot));
+                    int lineEndPos = Utilities.getRowEnd(target, Math.max(mark, dot));
+                    String line = doc.getText(lineStartPos, lineEndPos-lineStartPos);
+                    if (nextLine)
+                    { // swap with line below
+                        if (lineEndPos < doc.getLength()-1) {
+                            doc.remove(lineStartPos, lineEndPos-lineStartPos+1);
+                            int newLen = doc.getLength();
+                            int targetPos = Utilities.getRowEnd(target, lineStartPos)+1;
+                            try {
+                                ((BaseDocument)doc).forceUndoMerge();
+                                if (targetPos >= newLen) {
+                                    doc.insertString(doc.getLength(), "\n", null);
+                                } else {
+                                    line+="\n";
+                                }
+                                doc.insertString(targetPos, line, null);
+                                caret.setDot(targetPos+lineEndPos-lineStartPos);
+                                caret.moveDot(targetPos);
+                            } finally {
+                                ((BaseDocument)doc).endForceUndoMerge();
+                            }
+                        }
+                    }
+                    else
+                    { // swap with line above
+                        if (lineStartPos > 0) {
+                            int targetPos = Utilities.getRowStart(target, lineStartPos-1);
+                            int removeLen = lineEndPos-lineStartPos+1;
+                            int removeStart = lineStartPos;
+                            if (lineStartPos+removeLen>=doc.getLength()) {
+                                removeStart-=1;
+                            }
+                            line+="\n";
+                            doc.remove(removeStart, removeLen);
+                            try {
+                                ((BaseDocument)doc).forceUndoMerge();
+                                doc.insertString(targetPos, line, null);
+                                caret.setDot(targetPos+lineEndPos-lineStartPos);
+                                caret.moveDot(targetPos);
+                            } finally {
+                                ((BaseDocument)doc).endForceUndoMerge();
+                            }
                         }
                     }
                 }

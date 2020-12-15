@@ -218,13 +218,22 @@ public class SettingsDefaults {
               KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, InputEvent.SHIFT_MASK),
               BaseKit.deletePrevCharAction
           ),
+          new MultiKeyBinding(
+              KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, InputEvent.CTRL_MASK),
+              BaseKit.deletePrevWordAction
+          ),
 /*          new MultiKeyBinding(
               KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_MASK | InputEvent.SHIFT_MASK),
               BaseKit.deletePrevCharAction
           ),
-*/          new MultiKeyBinding(
+*/
+          new MultiKeyBinding(
               KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0),
               BaseKit.deleteNextCharAction
+          ),
+          new MultiKeyBinding(
+              KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, InputEvent.CTRL_MASK),
+              BaseKit.deleteNextWordAction
           ),
           new MultiKeyBinding(
               KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0),
@@ -400,6 +409,14 @@ public class SettingsDefaults {
           ),
 
           // other bindings
+          new MultiKeyBinding(
+              KeyStroke.getKeyStroke(KeyEvent.VK_UP, InputEvent.SHIFT_MASK | InputEvent.CTRL_MASK),
+              BaseKit.swapLineUpAction
+          ),
+          new MultiKeyBinding(
+              KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.SHIFT_MASK | InputEvent.CTRL_MASK),
+              BaseKit.swapLineDownAction
+          ),
           new MultiKeyBinding(
               KeyStroke.getKeyStroke(KeyEvent.VK_A, menuShortcutKeyMask),
               BaseKit.selectAllAction

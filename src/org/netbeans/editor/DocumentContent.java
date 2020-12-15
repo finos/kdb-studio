@@ -1,11 +1,11 @@
 /*
  *                 Sun Public License Notice
- * 
+ *
  * The contents of this file are subject to the Sun Public License
  * Version 1.0 (the "License"). You may not use this file except in
  * compliance with the License. A copy of the License is available at
  * http://www.sun.com/
- * 
+ *
  * The Original Code is NetBeans. The Initial Developer of the Original
  * Code is Sun Microsystems, Inc. Portions Copyright 1997-2003 Sun
  * Microsystems, Inc. All Rights Reserved.
@@ -30,7 +30,7 @@ import javax.swing.undo.UndoableEdit;
  */
 
 final class DocumentContent implements AbstractDocument.Content, CharSeq, GapStart {
-    
+
     private static final char[] EMPTY_CHAR_ARRAY = new char[0];
 
     /**
@@ -40,10 +40,10 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
      * being undone/redone.
      */
     private static final UndoableEdit INVALID_EDIT = new AbstractUndoableEdit();
-        
+
     /** Vector holding the marks for the document */
     private final MarkVector markVector;
-    
+
     /** Array with gap holding the text of the document */
     private char[] charArray;
 
@@ -52,18 +52,18 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
 
     /** Length of the gap */
     private int gapLength;
-    
+
     // Unfortunately needed for syntax updates
     private BaseDocument doc;
-    
+
     DocumentContent() {
         charArray = EMPTY_CHAR_ARRAY;
         markVector = new MarkVector();
-        
+
         // Insert implied '\n'
         insertText(0, "\n");
     }
-    
+
     public final int getGapStart() { // to implement GapStart
         return gapStart;
     }
@@ -74,7 +74,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         checkBounds(offset, 0, length() - 1);
         return new Edit(offset, text);
     }
-    
+
     public UndoableEdit remove(int offset, int length)
     throws BadLocationException {
 
@@ -102,25 +102,25 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
     public int length() {
         return charArray.length - gapLength;
     }
-    
+
     public void getChars(int offset, int length, Segment chars)
     throws BadLocationException {
 
         checkBounds(offset, length, length());
-        
+
         if ((offset + length) <= gapStart) { // completely below gap
             chars.array = charArray;
             chars.offset = offset;
-            
+
         } else if (offset >= gapStart) { // completely above gap
             chars.array = charArray;
             chars.offset = offset + gapLength;
-            
+
         } else { // spans the gap, must copy
             chars.array = copySpanChars(offset, length);
             chars.offset = 0;
         }
-        
+
         chars.count = length;
     }
 
@@ -130,7 +130,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         checkBounds(offset, length, length());
         return getText(offset, length);
     }
-    
+
     String getText(int offset, int length) {
         if (offset < 0 || length < 0) {
             throw new IllegalStateException("offset=" + offset + ", length=" + length);
@@ -139,41 +139,41 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         String ret;
         if ((offset + length) <= gapStart) { // completely below gap
             ret = new String(charArray, offset, length);
-            
+
         } else if (offset >= gapStart) { // completely above gap
             ret = new String(charArray, offset + gapLength, length);
-            
+
         } else { // spans the gap, must copy
             ret = new String(copySpanChars(offset, length));
         }
-        
+
         return ret;
     }
 
     public char charAt(int index) {
         return charArray[getRawIndex(index)];
     }
-    
+
     void compact() {
         if (gapLength > 0) {
             int newLength = charArray.length - gapLength;
             char[] newCharArray = new char[newLength];
             int gapEnd = gapStart + gapLength;
             System.arraycopy(charArray, 0, newCharArray, 0, gapStart);
-            System.arraycopy(charArray, gapEnd, newCharArray, gapStart, 
+            System.arraycopy(charArray, gapEnd, newCharArray, gapStart,
                 charArray.length - gapEnd);
             charArray = newCharArray;
             gapStart = charArray.length;
             gapLength = 0;
         }
-        
+
         markVector.compact();
     }
-    
+
     private int getRawIndex(int index) {
         return (index < gapStart) ? index : (index + gapLength);
     }
-    
+
     private void moveGap(int index) {
         if (index <= gapStart) { // move gap down
             int moveSize = gapStart - index;
@@ -188,7 +188,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
             gapStart += moveSize;
         }
     }
-    
+
     private void enlargeGap(int extraLength) {
         int newLength = Math.max(10, charArray.length * 3 / 2 + extraLength);
         int gapEnd = gapStart + gapLength;
@@ -206,15 +206,15 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         if ((offset + length) <= gapStart) { // completely below gap
             ret = new char[length];
             System.arraycopy(charArray, offset, ret, 0, length);
-            
+
         } else if (offset >= gapStart) { // completely above gap
             ret = new char[length];
             System.arraycopy(charArray, offset + gapLength, ret, 0, length);
-            
+
         } else { // spans the gap, must copy
             ret = copySpanChars(offset, length);
         }
-        
+
         return ret;
     }
 
@@ -240,7 +240,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         gapStart += textLength;
         gapLength -= textLength;
     }
-    
+
     void removeText(int offset, int length) {
         if (offset >= gapStart) { // completely over gap
             if (offset > gapStart) {
@@ -254,7 +254,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
                     moveGap(endOffset);
                 }
                 gapStart -= length;
-                
+
             } else { // spans gap
                 gapStart = offset;
             }
@@ -266,29 +266,29 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
     private void checkBounds(int offset, int length, int limitOffset)
     throws BadLocationException {
 
-	if (offset < 0) {
-	    throw new BadLocationException("Invalid offset=" + offset, offset);
-	}
+    if (offset < 0) {
+        throw new BadLocationException("Invalid offset=" + offset, offset);
+    }
         if (length < 0) {
             throw new BadLocationException("Invalid length" + length, length);
         }
-	if (offset + length > limitOffset) {
-	    throw new BadLocationException(
+    if (offset + length > limitOffset) {
+        throw new BadLocationException(
                 "docLength=" + (length() - 1)
                 + ":  Invalid offset"
                 + ((length != 0) ? "+length" : "")
                 + "=" + (offset + length),
                 (offset + length)
             );
-	}
     }
-    
+    }
+
     void setBaseDocument(BaseDocument doc) {
         this.doc = doc;
     }
-    
+
     class Edit extends AbstractUndoableEdit {
-        
+
         /** Constructor used for insert.
          * @param offset offset of insert.
          * @param text inserted text.
@@ -299,9 +299,9 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
             this.text = text;
 
             undoOrRedo(length, false); // pretend redo
-            
+
         }
-        
+
         /** Constructor used for remove.
          * @param offset offset of remove.
          * @param length length of the removed text.
@@ -309,46 +309,53 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         Edit(int offset, int length) {
             this.offset = offset;
             this.length = -length;
-            
+
             // Added to make sure the text is not inited later at unappropriate time
             this.text = getText(offset, length);
 
             undoOrRedo(-length, false); // pretend redo
-            
+
         }
-        
+
         private int offset;
-        
+
         private int length;
-        
+
         private String text;
-        
+
         private MarkVector.Undo markVectorUndo;
-        
+
         private UndoableEdit lineUndo;
-        
+
         private int syntaxUpdateOffset;
-        
+
+        public String toString() {
+            return super.toString() +" offset="+offset+" length="+length+" text="+text;
+        }
+
+        public int getOffset() { return offset; }
+        public int getLength() { return length; }
+
         public void undo() throws CannotUndoException {
             super.undo();
 
             undoOrRedo(-length, true);
         }
-        
+
         public void redo() throws CannotRedoException {
             super.redo();
 
             undoOrRedo(length, false);
         }
-        
+
         private LineRootElement getLineRoot() {
             return (LineRootElement)doc.getParagraphElement(0).getParentElement();
         }
-        
+
         private void undoOrRedo(int len, boolean undo) {
-            
+
             boolean lineUndoAssigned = false; // whether lineUndo was assigned in this body
-            
+
             // Line undo information must be obtained before doing the actual remove
             if (lineUndo == null && len < 0) {
                 lineUndo = getLineRoot().removeUpdate(offset, -len);
@@ -356,7 +363,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
                 if (lineUndo == null) { // must be valid value
                     lineUndo = INVALID_EDIT; // must not be undone - can't be flyweight!!!
                 }
-                
+
                 lineUndoAssigned = true;
             }
 
@@ -366,7 +373,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
             } else { // do insert
                 insertText(offset, text);
             }
-            
+
             // Update marks
             markVectorUndo = markVector.update(offset, len, markVectorUndo);
             // Update document's compatible marks storage - no undo
@@ -387,14 +394,14 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
                     throw new IllegalStateException();
                 }
                 lineUndo = getLineRoot().insertUpdate(offset, length);
-                    
+
                 if (lineUndo == null) { // must be valid value
                     lineUndo = INVALID_EDIT; // must not be undone - can't be flyweight!!!
                 }
-                
+
                 lineUndoAssigned = true;
             }
-                
+
             // Update syntax state infos (based on updated text and line structures
             syntaxUpdateOffset = getLineRoot().fixSyntaxStateInfos(offset, len);
         }
@@ -405,9 +412,35 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         final String getUndoRedoText() {
             return text;
         }
-        
+
         final int getSyntaxUpdateOffset() {
             return syntaxUpdateOffset;
+        }
+
+        public boolean tryAppend(Edit other) {
+            if (other.length>0) {
+                if (this.length <= 0) return false;
+                if (this.offset+this.length != other.offset) return false;
+                this.text += other.text;
+                this.length += other.length;
+                return true;
+            }
+            if (other.length<0) {
+                if (this.length >= 0) return false;
+                if (this.offset+other.length == other.offset) { //deleting text backwards
+                    this.text = other.text + this.text;
+                    this.offset += other.length;
+                    this.length += other.length;
+                    return true;
+                }
+                if (this.offset == other.offset) {  //deleting forwards
+                    this.text += other.text;
+                    this.length += other.length;
+                    return true;
+                }
+                return false;
+            }
+            return false;
         }
 
     }

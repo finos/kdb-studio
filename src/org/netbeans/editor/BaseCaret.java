@@ -773,7 +773,7 @@ AtomicLockListener {
                     && component == Utilities.getLastActiveComponent()
                ) {
                 // in undo mode and current component
-                undoOffset = evt.getOffset() + evt.getLength();
+                undoOffset = evt.getOffset() + Math.abs(evt.getLength());
             } else {
                 undoOffset = -1;
             }

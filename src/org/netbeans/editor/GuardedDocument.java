@@ -182,11 +182,11 @@ public class GuardedDocument extends BaseDocument
                                        boolean replace) {
         if (((Boolean)s.getAttribute(GUARDED_ATTRIBUTE)).booleanValue() == true) {
             guardedBlockChain.addBlock(offset, offset + length, false); // no concat
-            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE));
+            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE, null));
         }
         if (((Boolean)s.getAttribute(GUARDED_ATTRIBUTE)).booleanValue() == false) {
             guardedBlockChain.removeBlock(offset, offset + length);
-            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE));
+            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE, null));
         }
     }
 
@@ -231,8 +231,8 @@ public class GuardedDocument extends BaseDocument
     }
 
     protected BaseDocumentEvent createDocumentEvent(int offset, int length,
-            DocumentEvent.EventType type) {
-        return new GuardedDocumentEvent(this, offset, length, type);
+            DocumentEvent.EventType type, BaseDocumentEvent previous) {
+        return new GuardedDocumentEvent(this, offset, length, type, previous);
     }
 
     /** Adds style to the document */
@@ -322,7 +322,7 @@ public class GuardedDocument extends BaseDocument
             extWriteUnlock();
         }
         fireChangedUpdate(createDocumentEvent(pos, 0,
-                                              DocumentEvent.EventType.CHANGE)); // enough to say length 0
+                                              DocumentEvent.EventType.CHANGE, null)); // enough to say length 0
     }
 
     /** Get logical style for position in paragraph */
