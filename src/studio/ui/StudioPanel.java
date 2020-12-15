@@ -141,20 +141,7 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
         }
     }
     public static WindowListMonitor windowListMonitor = new WindowListMonitor();
-/*
-    private void updateKeyBindings(JEditorPane editorPane) {
-        InputMap inputMap = editorPane.getInputMap();
-        inputMap.put(KeyStroke.getKeyStroke("DELETE"),ExtKit.deleteNextCharAction);
-        inputMap.put(KeyStroke.getKeyStroke("BACK_SPACE"),ExtKit.deletePrevCharAction);
-        inputMap.put(KeyStroke.getKeyStroke("ENTER"),ExtKit.insertBreakAction);
-        inputMap.put(KeyStroke.getKeyStroke("UP"),ExtKit.upAction);
-        inputMap.put(KeyStroke.getKeyStroke("DOWN"),ExtKit.downAction);
-        inputMap.put(KeyStroke.getKeyStroke("LEFT"),ExtKit.backwardAction);
-        inputMap.put(KeyStroke.getKeyStroke("RIGHT"),ExtKit.forwardAction);
-        inputMap.put(KeyStroke.getKeyStroke("ctrl Z"),ExtKit.undoAction);
-        inputMap.put(KeyStroke.getKeyStroke("ctrl Y"),ExtKit.redoAction);
-    }
-*/
+
     private void updateUndoRedoState(UndoManager um) {
         undoAction.setEnabled(um.canUndo());
         redoAction.setEnabled(um.canRedo());
@@ -273,6 +260,7 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
                     updateUndoRedoState(this);
                 }
             };
+            um.setLimit(-1);    //unlimited
             doc.putProperty(BaseDocument.UNDO_MANAGER_PROP,um);
             doc.addUndoableEditListener(um);
         }
@@ -826,9 +814,11 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
         try {
             String s = getContents(new File(filename));
 
-            textArea.getDocument().remove(0,textArea.getDocument().getLength());
-            textArea.getDocument().insertString(0,s,null);
-            textArea.getDocument().putProperty("filename",filename);
+            BaseDocument doc = (BaseDocument)textArea.getDocument();
+            doc.remove(0,textArea.getDocument().getLength());
+            doc.insertString(0,s,null);
+            doc.clearLastEvent();
+            doc.putProperty("filename",filename);
             windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
             initDocument();
             textArea.setCaretPosition(0);

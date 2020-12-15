@@ -154,6 +154,9 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
     /** Reset merging next created undoable edit to the last one. */
     boolean undoMergeReset;
 
+    /** Force merging next created undoable edit to the last one. */
+    boolean undoMergeForce;
+
     /** Kit class stored here */
     Class kitClass;
 
@@ -184,6 +187,8 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
      * BaseDocumentEvent.canUndo() checks this flag.
      */
     UndoableEdit lastModifyUndoEdit; // #8692 check last modify undo edit
+
+    BaseDocumentEvent lastEditEvent;
 
     /** List of annotations for this document. */
     private Annotations annotations;
@@ -541,23 +546,39 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
                 Thread.dumpStack();
             }
 
-            BaseDocumentEvent evt = createDocumentEvent(offset, text.length(), DocumentEvent.EventType.INSERT);
-            if (edit != null) {
+            BaseDocumentEvent evt = lastEditEvent;
+            //BaseDocumentEvent evt = null;
+            boolean newEvent = false;
+            if (evt != null) {
+                UndoableEdit newEdit = evt.tryAppendEdit(edit);
+                if (newEdit == null) {
+                    evt = lastEditEvent = null;
+                } else {
+                    edit = newEdit;
+                }
+            }
+            if (evt == null) {
+                newEvent = true;
+                evt = createDocumentEvent(offset, text.length(), DocumentEvent.EventType.INSERT);
+                lastEditEvent = evt;
                 evt.addEdit(edit);
-                
+            }
+            if (edit != null) {
                 lastModifyUndoEdit = edit; // #8692 check last modify undo edit
             }
 
             modified = true;
 
-            if (atomicDepth > 0) {
-                if (atomicEdits == null) {
-                    atomicEdits = new AtomicCompoundEdit();
+            if (newEvent) {
+                if (atomicDepth > 0) {
+                    if (atomicEdits == null) {
+                        atomicEdits = new AtomicCompoundEdit();
+                    }
+                    atomicEdits.addEdit(evt); // will be added
                 }
-                atomicEdits.addEdit(evt); // will be added
-            }
 
-            insertUpdate(evt, a);
+                insertUpdate(evt, a);
+            }
 
             evt.end();
 
@@ -597,17 +618,31 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
 
                 preRemoveCheck(offset, len);
 
-                BaseDocumentEvent evt = createDocumentEvent(offset, len, DocumentEvent.EventType.REMOVE);
-
-                removeUpdate(evt);
-
                 UndoableEdit edit = getContent().remove(offset, len);
-                if (edit != null) {
+
+                BaseDocumentEvent evt = lastEditEvent;
+                boolean newEvent = false;
+                if (evt != null) {
+                    UndoableEdit newEdit = evt.tryAppendEdit(edit);
+                    if (newEdit == null) {
+                        evt = lastEditEvent = null;
+                    } else {
+                        edit = newEdit;
+                    }
+                }
+                if (evt == null) {
+                    newEvent = true;
+                    evt = createDocumentEvent(offset, len, DocumentEvent.EventType.REMOVE);
+                    lastEditEvent = evt;
                     evt.addEdit(edit);
-                
-                    lastModifyUndoEdit = edit; // #8692 check last modify undo edit
+                }
+                if(newEvent) {
+                    removeUpdate(evt);
                 }
 
+                if (edit != null) {
+                    lastModifyUndoEdit = edit; // #8692 check last modify undo edit
+                }
                 if (debug) {
                     System.err.println("BaseDocument.remove(): doc=" + this // NOI18N
                         + ", offset=" + offset + ", len=" + len); // NOI18N
@@ -616,7 +651,7 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
                     Thread.dumpStack();
                 }
 
-                if (atomicDepth > 0) { // add edits as soon as possible
+                if (newEvent && atomicDepth > 0) { // add edits as soon as possible
                     if (atomicEdits == null) {
                         atomicEdits = new AtomicCompoundEdit();
                     }
@@ -973,6 +1008,14 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
     */
     public void resetUndoMerge() {
         undoMergeReset = true;
+    }
+
+    public void forceUndoMerge() {
+        undoMergeForce = true;
+    }
+
+    public void endForceUndoMerge() {
+        undoMergeForce = false;
     }
 
     /* Defined because of the hack for undo()
@@ -1336,4 +1379,7 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
         
     }
 
+    public void clearLastEvent() {
+        lastEditEvent = null;
+    }
 }

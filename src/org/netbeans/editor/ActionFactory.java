@@ -682,6 +682,7 @@ public class ActionFactory {
                 try {
                     undoMgr.undo();
                 } catch (CannotUndoException e) {
+                    e.printStackTrace();
                     target.getToolkit().beep();
                 }
             }

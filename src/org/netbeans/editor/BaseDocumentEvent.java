@@ -1,11 +1,11 @@
 /*
  *                 Sun Public License Notice
- * 
+ *
  * The contents of this file are subject to the Sun Public License
  * Version 1.0 (the "License"). You may not use this file except in
  * compliance with the License. A copy of the License is available at
  * http://www.sun.com/
- * 
+ *
  * The Original Code is NetBeans. The Initial Developer of the Original
  * Code is Sun Microsystems, Inc. Portions Copyright 1997-2003 Sun
  * Microsystems, Inc. All Rights Reserved.
@@ -65,7 +65,7 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
     private boolean inProgress2;
 
     private Hashtable changeLookup2;
-    
+
     private int lfCount = -1;
 
     static final long serialVersionUID =-7624299835780414963L;
@@ -79,9 +79,8 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
     public BaseDocumentEvent(BaseDocument doc, int offset, int length,
                              DocumentEvent.EventType type) {
         ((AbstractDocument)doc).super(offset, length, type);
-
-	hasBeenDone2 = true;
-	alive2 = true;
+        hasBeenDone2 = true;
+        alive2 = true;
         inProgress2 = true;
     }
 
@@ -95,7 +94,7 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
         return null;
     }
 
-    private DocumentContent.Edit getModifyUndoEdit() {
+    public DocumentContent.Edit getModifyUndoEdit() {
         if (getType() == DocumentEvent.EventType.CHANGE) {
             throw new IllegalStateException("Cannot be called for CHANGE events."); // NOI18N
         }
@@ -109,7 +108,7 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
     /** Gets the characters that were inserted/removed or null
     * for change event.
     * Characters must be used only in readonly mode as the
-    * character array is shared by all listeners and also by 
+    * character array is shared by all listeners and also by
     * modification event itself.
      * @deprecated
     */
@@ -152,10 +151,10 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
             }
             lfCount = lfCnt;
         }
-        
+
         return lfCount;
     }
-            
+
     /** Get the offset at which the updating of the syntax stopped so there
     * are no more changes in the tokens after this point.
     */
@@ -166,7 +165,7 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
 
         return getModifyUndoEdit().getSyntaxUpdateOffset();
     }
-    
+
     public String getDrawLayerName() {
         if (getType() != DocumentEvent.EventType.CHANGE) {
             throw new IllegalStateException("Can be called for CHANGE events only."); // NOI18N
@@ -209,7 +208,7 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
                 throw new CannotUndoException();
             }
             hasBeenDone2 = false;
-           
+
             doc.lastModifyUndoEdit = null; // #8692 check last modify undo edit
 
             int i = edits.size();
@@ -257,7 +256,8 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
 
             Enumeration cursor = edits.elements();
             while (cursor.hasMoreElements()) {
-                ((UndoableEdit)cursor.nextElement()).redo();
+                UndoableEdit edit = (UndoableEdit)cursor.nextElement();
+                edit.redo();
             }
 
             // fire a DocumentEvent to notify the view(s)
@@ -293,44 +293,54 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
             }
         }
 
-        // if we have a hashtable... add the entry if it's 
+        // if we have a hashtable... add the entry if it's
         // an ElementChange.
         if ((changeLookup2 != null) && (anEdit instanceof DocumentEvent.ElementChange)) {
             DocumentEvent.ElementChange ec = (DocumentEvent.ElementChange) anEdit;
             changeLookup2.put(ec.getElement(), ec);
         }
 
-	if (!inProgress2) {
-	    return false;
+    if (!inProgress2) {
+        return false;
 
-	} else {
-	    UndoableEdit last = lastEdit();
+    } else {
+        UndoableEdit last = lastEdit();
 
-	    // If this is the first subedit received, just add it.
-	    // Otherwise, give the last one a chance to absorb the new
-	    // one.  If it won't, give the new one a chance to absorb
-	    // the last one.
+        // If this is the first subedit received, just add it.
+        // Otherwise, give the last one a chance to absorb the new
+        // one.  If it won't, give the new one a chance to absorb
+        // the last one.
 
-	    if (last == null) {
-		edits.addElement(anEdit);
-	    }
-	    else if (!last.addEdit(anEdit)) {
-		if (anEdit.replaceEdit(last)) {
-		    edits.removeElementAt(edits.size()-1);
-		}
-		edits.addElement(anEdit);
-	    }
+        if (last == null) {
+            edits.addElement(anEdit);
+            modifyUndoEdit = null;
+        }
+        else if (!last.addEdit(anEdit)) {
+            if (anEdit.replaceEdit(last)) {
+                edits.removeElementAt(edits.size()-1);
+            }
+            edits.addElement(anEdit);
+            modifyUndoEdit = null;
+        }
 
-	    return true;
+        return true;
         }
         // End super of addEdit()
+    }
+
+    public UndoableEdit tryAppendEdit(UndoableEdit edit) {
+        if (!(edit instanceof DocumentContent.Edit)) return null;
+        UndoableEdit last = lastEdit();
+        if (!(last instanceof DocumentContent.Edit)) return null;
+        if (((DocumentContent.Edit)last).tryAppend((DocumentContent.Edit)edit)) return last;
+        return null;
     }
 
     private boolean isLastModifyUndoEdit() {
         if (getType() == DocumentEvent.EventType.CHANGE) {
             return true; // OK in this case
         }
-        
+
         BaseDocument doc = (BaseDocument)getDocument();
         doc.extWriteLock(); // lock to sync if ongoing doc change
         try {
@@ -338,9 +348,10 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
             if (doc.lastModifyUndoEdit == null) {
                 return true; // OK in this case
             }
-            
+
             DocumentContent.Edit undoEdit = getModifyUndoEdit();
-            return (undoEdit == doc.lastModifyUndoEdit);
+            boolean result = undoEdit == doc.lastModifyUndoEdit;
+            return result;
         } finally {
             doc.extWriteUnlock();
         }
@@ -348,19 +359,19 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
 
     public boolean canUndo() {
         // Super of canUndo
-	return !inProgress2 && alive2 && hasBeenDone2
+    return !inProgress2 && alive2 && hasBeenDone2
         // End super of canUndo
             && isLastModifyUndoEdit();
     }
 
     /**
      * Returns false if isInProgress or if super does.
-     * 
-     * @see	#isInProgress
+     *
+     * @see #isInProgress
      */
     public boolean canRedo() {
         // Super of canRedo
-	return !inProgress2 && alive2 && !hasBeenDone2;
+    return !inProgress2 && alive2 && !hasBeenDone2;
         // End super of canRedo
     }
 
@@ -422,14 +433,14 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
     /** Try to determine whether this event can replace the old one.
     * This is used to batch the one-letter modifications into larger
     * parts (words) and undoing/redoing them at once.
-    * This method returns true whether 
+    * This method returns true whether
     */
     public boolean replaceEdit(UndoableEdit anEdit) {
         BaseDocument doc = (BaseDocument)getDocument();
         if (anEdit instanceof BaseDocumentEvent) {
             BaseDocumentEvent evt = (BaseDocumentEvent)anEdit;
 
-            if (!doc.undoMergeReset && canMerge(evt)) {
+            if ((!doc.undoMergeReset && canMerge(evt)) || doc.undoMergeForce) {
                 previous = evt;
                 return true;
             }
@@ -440,16 +451,16 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
 
     public void die() {
         // Super of die()
-	int size = edits.size();
-	for (int i = size-1; i >= 0; i--)
-	{
-	    UndoableEdit e = (UndoableEdit)edits.elementAt(i);
-	    e.die();
-	}
+    int size = edits.size();
+    for (int i = size-1; i >= 0; i--)
+    {
+        UndoableEdit e = (UndoableEdit)edits.elementAt(i);
+        e.die();
+    }
 
         alive2 = false;
         // End super of die()
-        
+
         if (previous != null) {
             previous.die();
             previous = null;
@@ -458,8 +469,12 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
 
     public void end() {
         // Super of end()
-	inProgress2 = false;
+    inProgress2 = false;
         // End super of end()
+    }
+
+    public void resume() {
+        inProgress2 = true;
     }
 
     public DocumentEvent.ElementChange getChange(Element elem) {
@@ -489,6 +504,14 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
                   ? ("text='" + getText() + "'") : "");
     }
 
+    public int getOffset() {
+        return ((DocumentContent.Edit)lastEdit()).getOffset();
+    }
+
+    public int getLength() {
+        return ((DocumentContent.Edit)lastEdit()).getLength();
+    }
+
     /** Edit describing the change of the document draw-layers */
     static class DrawLayerChange extends AbstractUndoableEdit {
 
@@ -510,5 +533,5 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
         }
 
     }
-    
+
 }
