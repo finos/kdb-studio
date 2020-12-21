@@ -989,7 +989,7 @@ class DrawEngine {
      */
     void draw(DrawGraphics drawGraphics, EditorUI editorUI, int startOffset, int endOffset,
               int startX, int startY, int targetOffset) throws BadLocationException {
-        // Some correctness tests at the begining
+        // Some correctness tests at the beginning
         if (startOffset < 0 || endOffset < 0 || startOffset > endOffset
                 || startX < 0 || startY < 0
            ) {

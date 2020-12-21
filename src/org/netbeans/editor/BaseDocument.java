@@ -547,6 +547,8 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
             }
 
             BaseDocumentEvent evt = lastEditEvent;
+            BaseDocumentEvent deltaEvt = createDocumentEvent(offset, text.length(), DocumentEvent.EventType.INSERT);
+            deltaEvt.addEdit(edit);
             //BaseDocumentEvent evt = null;
             boolean newEvent = false;
             if (evt != null) {
@@ -559,9 +561,8 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
             }
             if (evt == null) {
                 newEvent = true;
-                evt = createDocumentEvent(offset, text.length(), DocumentEvent.EventType.INSERT);
+                evt = deltaEvt;
                 lastEditEvent = evt;
-                evt.addEdit(edit);
             }
             if (edit != null) {
                 lastModifyUndoEdit = edit; // #8692 check last modify undo edit
@@ -582,7 +583,7 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
 
             evt.end();
 
-            fireInsertUpdate(evt);
+            fireInsertUpdate(deltaEvt);
 
             boolean isComposedText = ((a != null)
                                       && (a.isDefined(StyleConstants.ComposedTextAttribute)));
@@ -621,6 +622,9 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
                 UndoableEdit edit = getContent().remove(offset, len);
 
                 BaseDocumentEvent evt = lastEditEvent;
+                BaseDocumentEvent deltaEvt = createDocumentEvent(offset, len, DocumentEvent.EventType.REMOVE);;
+                deltaEvt.addEdit(edit);
+
                 boolean newEvent = false;
                 if (evt != null) {
                     UndoableEdit newEdit = evt.tryAppendEdit(edit);
@@ -632,9 +636,8 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
                 }
                 if (evt == null) {
                     newEvent = true;
-                    evt = createDocumentEvent(offset, len, DocumentEvent.EventType.REMOVE);
+                    evt = deltaEvt;
                     lastEditEvent = evt;
-                    evt.addEdit(edit);
                 }
                 if(newEvent) {
                     removeUpdate(evt);
@@ -662,7 +665,7 @@ public class BaseDocument extends AbstractDocument implements SettingsChangeList
 
                 evt.end();
 
-                fireRemoveUpdate(evt);
+                fireRemoveUpdate(deltaEvt);
                 if (atomicDepth == 0 && !composedText) {
                     fireUndoableEditUpdate(new UndoableEditEvent(this, evt));
                 }

@@ -184,7 +184,6 @@ public class KeywordMatchGenerator {
     *   in all keywords in the group.
     */
     private void scan(int indFrom, int indTo, int offset, int indent, int minKwdLen) {
-        //    System.out.println(">>>DEBUG<<< indFrom=" + indFrom + ", indTo=" + indTo + ", offset=" + offset + ", indent=" + indent + ", minKwdLen="+ minKwdLen); // NOI18N
         int maxLen = 0;
         for (int i = indFrom; i < indTo; i++) {
             maxLen = Math.max(maxLen, kwds[i].length());
@@ -199,7 +198,6 @@ public class KeywordMatchGenerator {
                 minLen = Math.min(minLen, kwds[i].length());
             }
 
-            //      System.out.println(">>>DEBUG<<< while(): minLen=" + minLen + ", minKwdLen=" + minKwdLen); // NOI18N
             if (minLen > minKwdLen) {
                 appendString(indent(indent) + "if (len <= " + (minLen - 1) + ")\n"); // NOI18N
                 appendString(indent(indent + 1) + "return -1;\n"); // NOI18N
@@ -222,8 +220,6 @@ public class KeywordMatchGenerator {
                 }
                 same++;
             }
-
-            //      System.out.println(">>>DEBUG<<< minLen=" + minLen + ", maxLen=" + maxLen + ", same=" + same); // NOI18N
 
             // Add check for all the same chars
             if (same > 0) {

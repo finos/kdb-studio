@@ -711,6 +711,7 @@ public class ActionFactory {
                 try {
                     undoMgr.redo();
                 } catch (CannotRedoException e) {
+                    e.printStackTrace();
                     target.getToolkit().beep();
                 }
             }

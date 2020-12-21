@@ -35,11 +35,7 @@ public class AuthenticationManager {
     public synchronized static AuthenticationManager getInstance() {
         if (instance == null)
             instance = new AuthenticationManager();
-
-        /*      String [] x=instance.getAuthenticationMechanisms();
-        for(int i= 0; i <x.length;i++)
-        System.out.println(x[i]);
-         */ return instance;
+        return instance;
     }
 
     private AuthenticationManager() {

@@ -269,8 +269,9 @@ public class LeafView extends BaseView {
     protected int getYFromPos(int pos) throws BadLocationException {
         int relLine = 0;
         try {
-            relLine = Utilities.getLineOffset(((BaseDocument)getDocument()), pos)
-                      - ((BaseElement)getElement()).getStartMark().getLine();
+            int lineOffset = Utilities.getLineOffset(((BaseDocument)getDocument()), pos);
+            int markLine = ((BaseElement)getElement()).getStartMark().getLine();
+            relLine = lineOffset - markLine;
         } catch (InvalidMarkException e) {
             if (Boolean.getBoolean("netbeans.debug.exceptions")) { // NOI18N
                 e.printStackTrace();

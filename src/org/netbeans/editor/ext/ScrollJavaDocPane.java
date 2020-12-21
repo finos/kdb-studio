@@ -168,23 +168,4 @@ public class ScrollJavaDocPane extends JPanel implements JavaDocPane, SettingsCh
             }
         }
     }
-    /*
-    private class BackAction implements ActionListener{
-        public void actionPerformed(ActionEvent evt) {
-            if (cjd!=null){
-                System.out.println("back");
-                cjd.backHistory();
-            }
-        }
-    }
-
-    private class ForwardAction implements ActionListener {
-        public void actionPerformed(ActionEvent evt) {
-            if (cjd!=null){
-                System.out.println("fwd");
-                cjd.forwardHistory();
-            }
-        }
-    }
-    */
 }

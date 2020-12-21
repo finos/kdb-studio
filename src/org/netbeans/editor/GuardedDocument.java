@@ -182,17 +182,16 @@ public class GuardedDocument extends BaseDocument
                                        boolean replace) {
         if (((Boolean)s.getAttribute(GUARDED_ATTRIBUTE)).booleanValue() == true) {
             guardedBlockChain.addBlock(offset, offset + length, false); // no concat
-            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE, null));
+            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE));
         }
         if (((Boolean)s.getAttribute(GUARDED_ATTRIBUTE)).booleanValue() == false) {
             guardedBlockChain.removeBlock(offset, offset + length);
-            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE, null));
+            fireChangedUpdate(createDocumentEvent(offset, length, DocumentEvent.EventType.CHANGE));
         }
     }
 
     public void runAtomic(Runnable r) {
         if (debugAtomic) {
-            System.out.println("GuardedDocument.runAtomic() called"); // NOI18N
             if (debugAtomicStack) {
                 Thread.dumpStack();
             }
@@ -205,14 +204,12 @@ public class GuardedDocument extends BaseDocument
         } finally {
             breakGuarded = origBreakGuarded;
             if (debugAtomic) {
-                System.out.println("GuardedDocument.runAtomic() finished"); // NOI18N
             }
         }
     }
 
     public void runAtomicAsUser(Runnable r) {
         if (debugAtomic) {
-            System.out.println("GuardedDocument.runAtomicAsUser() called"); // NOI18N
             if (debugAtomicStack) {
                 Thread.dumpStack();
             }
@@ -224,15 +221,14 @@ public class GuardedDocument extends BaseDocument
             super.runAtomicAsUser(r);
         } finally {
             if (debugAtomic) {
-                System.out.println("GuardedDocument.runAtomicAsUser() finished"); // NOI18N
             }
             atomicAsUser = origAtomicAsUser;
         }
     }
 
     protected BaseDocumentEvent createDocumentEvent(int offset, int length,
-            DocumentEvent.EventType type, BaseDocumentEvent previous) {
-        return new GuardedDocumentEvent(this, offset, length, type, previous);
+            DocumentEvent.EventType type) {
+        return new GuardedDocumentEvent(this, offset, length, type);
     }
 
     /** Adds style to the document */
@@ -322,7 +318,7 @@ public class GuardedDocument extends BaseDocument
             extWriteUnlock();
         }
         fireChangedUpdate(createDocumentEvent(pos, 0,
-                                              DocumentEvent.EventType.CHANGE, null)); // enough to say length 0
+                                              DocumentEvent.EventType.CHANGE)); // enough to say length 0
     }
 
     /** Get logical style for position in paragraph */

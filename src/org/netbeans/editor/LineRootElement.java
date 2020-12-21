@@ -1,11 +1,11 @@
 /*
  *                 Sun Public License Notice
- * 
+ *
  * The contents of this file are subject to the Sun Public License
  * Version 1.0 (the "License"). You may not use this file except in
  * compliance with the License. A copy of the License is available at
  * http://www.sun.com/
- * 
+ *
  * The Original Code is NetBeans. The Initial Developer of the Original
  * Code is Sun Microsystems, Inc. Portions Copyright 1997-2003 Sun
  * Microsystems, Inc. All Rights Reserved.
@@ -25,20 +25,20 @@ import java.util.ArrayList;
  */
 
 final class LineRootElement extends GapBranchElement {
-    
+
     private static final String NAME
         = AbstractDocument.ParagraphElementName + "Root";
-    
+
     private BaseDocument doc;
-    
+
     private ArrayList addedLines = new ArrayList();
-    
+
     LineRootElement(BaseDocument doc) {
         this.doc = doc;
 
         replace(0, 0, new Element[]{ new LineElement(this, 0, null) });
     }
-    
+
     public Element getElement(int index) {
         if (index < 0) {
             throw new IndexOutOfBoundsException("Invalid line index=" + index + " < 0");
@@ -48,10 +48,10 @@ final class LineRootElement extends GapBranchElement {
             throw new IndexOutOfBoundsException("Invalid line index=" + index
                 + " >= lineCount=" + elementCount);
         }
-        
+
         return super.getElement(index);
     }
-    
+
     UndoableEdit insertUpdate(int offset, int length) {
         int startOffset = offset;
         offset += length;
@@ -64,7 +64,7 @@ final class LineRootElement extends GapBranchElement {
                 addedLines.add(lastCreatedLine);
             }
         }
-        
+
         if (lastCreatedLine != null) {
             Element[] linesAdded = new Element[addedLines.size()];
             addedLines.toArray(linesAdded);
@@ -74,14 +74,14 @@ final class LineRootElement extends GapBranchElement {
             replace(index, 0, linesAdded);
             return new Undo(index, EMPTY_ELEMENT_ARRAY, linesAdded);
         }
-        
+
         return null;
     }
 
     UndoableEdit removeUpdate(int offset, int length) {
         int endOffset = offset + length;
         CharSeq docText = doc.getText();
-        
+
         while (offset < endOffset) {
             if (docText.charAt(offset) == '\n') { // at least one line removed
                 int index = getElementIndex(offset + 1);
@@ -100,7 +100,7 @@ final class LineRootElement extends GapBranchElement {
             }
             offset++;
         }
-        
+
         return null;
     }
 
@@ -131,7 +131,7 @@ final class LineRootElement extends GapBranchElement {
             );
         }
     }
-    
+
     public Document getDocument() {
         return doc;
     }
@@ -171,7 +171,7 @@ final class LineRootElement extends GapBranchElement {
             line.clearSyntaxStateInfo();
         }
     }
-    
+
     /** Prepare syntax scanner so that it's ready to scan from requested
      * position.
      * @param text text segment to be used. Method ensures it will
@@ -180,7 +180,7 @@ final class LineRootElement extends GapBranchElement {
      *  <BR><CODE>text.count</CODE> equals to <CODE>reqLen</CODE>.
      * @param syntax syntax scanner to be used
      * @param reqPos position to which the syntax should be prepared
-     * @param reqLen length that will be scanned by the caller after the syntax 
+     * @param reqLen length that will be scanned by the caller after the syntax
      *   is prepared. The prepareSyntax() automatically preloads this area
      *   into the given text segment.
      * @param forceLastBuffer force the syntax to think that the scanned area is the last
@@ -288,7 +288,7 @@ final class LineRootElement extends GapBranchElement {
                     /* text segment contains all the required data including preScan
                      * but "officially" it points to validLineOffset offset.
                      */
-                    
+
                     syntax.load(stateInfo, text.array, text.offset,
                         text.count, false, lineElemOffset);
 
@@ -301,15 +301,15 @@ final class LineRootElement extends GapBranchElement {
                             textEndOffset - syntax.getOffset(),
                             false, validLineOffset
                         );
-                        
+
                         while (syntax.nextToken() != null) {
                             // ignore returned tokens
                         }
-                        
+
                         validLineElem.updateSyntaxStateInfo(syntax);
-                        
+
                     } while (validLineIndex != lineIndex);
-                    
+
                 } finally {
                     doc.releaseSyntax(syntax);
                 }
@@ -317,7 +317,7 @@ final class LineRootElement extends GapBranchElement {
                 DocumentUtilities.SEGMENT_CACHE.releaseSegment(text);
             }
         }
-        
+
         return lineElem;
     }
 
@@ -338,7 +338,6 @@ final class LineRootElement extends GapBranchElement {
             : 0;
 
         LineElement lineElem = getValidLineElement(lineIndex);
-//        System.out.println("Fixing lineIndex=" + lineIndex + ", addedLinesCount=" + addedLinesCount);
         Segment text = DocumentUtilities.SEGMENT_CACHE.getSegment();
         try {
             Syntax syntax = doc.getFreeSyntax();
@@ -346,16 +345,15 @@ final class LineRootElement extends GapBranchElement {
                 int docLastLineIndex = getElementCount() - 1;
                 if (lineIndex == docLastLineIndex) { // modification in last line
                     if (lineIndex == 0 && lineElem.getSyntaxStateInfo() != null) {
-//                        System.out.println("CCCCCCCCCClearing syntax state info");
                         lineElem.clearSyntaxStateInfo();
                     }
 
                     return doc.getLength();
                 }
-                
+
                 int maybeMatchLineIndex = Math.min(
                     lineIndex + addedLinesCount + 1, docLastLineIndex);
-                
+
                 Syntax.StateInfo stateInfo = null;
                 int lineStartOffset = 0;
                 int preScan = 0;
@@ -386,17 +384,15 @@ final class LineRootElement extends GapBranchElement {
 
                     if (lineIndex >= maybeMatchLineIndex) {
                         stateInfo = nextLineElem.getSyntaxStateInfo();
-                        if (stateInfo != null 
+                        if (stateInfo != null
                             && syntax.compareState(stateInfo) == Syntax.EQUAL_STATE
                         ) {
-//                            System.out.println("SAME-INFO lineIndex=" + lineIndex + ", stateInfo=" + ((Syntax.BaseStateInfo)nextLineElem.getSyntaxStateInfo()).toString(syntax));
                             break;
                         }
                     }
-                    
+
                     nextLineElem.updateSyntaxStateInfo(syntax);
-//                    System.out.println("FFFFixed lineIndex=" + lineIndex + ", offset=" + nextLineElem.getStartOffset() + ", stateInfo=" + ((Syntax.BaseStateInfo)nextLineElem.getSyntaxStateInfo()).toString(syntax));
-                    
+
                     lineIndex++;
                     if (lineIndex >= lineCount) { // still not match at begining of last line
                         return doc.getLength();
@@ -407,20 +403,20 @@ final class LineRootElement extends GapBranchElement {
 
                     nextLineElem = getValidLineElement(lineIndex);
                     nextLineStartOffset = nextLineElem.getStartOffset();
-                    
+
                     preScan = syntax.getPreScan();
                     doc.getText(lineStartOffset - preScan,
                         (nextLineStartOffset - lineStartOffset) + preScan, text);
 
                     text.offset += preScan;
                     text.count -= preScan;
-                    
+
                     syntax.relocate(text.array, text.offset, text.count,
                         false, nextLineStartOffset);
                 }
-                
+
                 return lineStartOffset;
-                
+
             } finally {
                 doc.releaseSyntax(syntax);
             }
@@ -434,13 +430,13 @@ final class LineRootElement extends GapBranchElement {
     private LineElement getLineElement(int index) {
         return (LineElement)getElement(index);
     }
-    
+
     private LineElement getValidLineElement(int lineIndex) {
         if (lineIndex < 0 || lineIndex >= getElementCount()) {
             throw new IllegalArgumentException("lineIndex=" + lineIndex
                 + ", lineCount=" + getElementCount());
         }
-        
+
         return getLineElement(lineIndex);
     }
 
@@ -464,7 +460,6 @@ final class LineRootElement extends GapBranchElement {
             Syntax.StateInfo stateInfo = lineElem.getSyntaxStateInfo();
             if (offset == lineStartOffset && stateInfo.getPreScan() == 0) {
                 // can be done with the given offset
-//            System.out.println("getTokenSafeOffset() offset=" + offset + " unchanged");
                 return offset;
             }
 
@@ -476,7 +471,6 @@ final class LineRootElement extends GapBranchElement {
                 lineStartOffset = lineElem.getStartOffset();
                 stateInfo = lineElem.getSyntaxStateInfo();
                 if (lineStartOffset - stateInfo.getPreScan() >= offset) {
-//        System.out.println("getTokenSafeOffset() offset=" + offset + " to safe offset=" + lineStartOffset + ", preScan=" + stateInfo.getPreScan() + ", lineIndex=" + lineIndex);
 
                     return lineStartOffset;
                 }
@@ -485,8 +479,10 @@ final class LineRootElement extends GapBranchElement {
             throw new IllegalStateException(e.toString());
         }
 
-//        System.out.println("getTokenSafeOffset() offset=" + offset + " to DOCLEN=" + doc.getLength());
         return doc.getLength();
     }
-    
+
+    public String toString() {
+        return "LineRootElement{super="+super.toString()+"}";
+    }
 }

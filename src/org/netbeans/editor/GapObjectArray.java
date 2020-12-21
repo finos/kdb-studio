@@ -1,11 +1,11 @@
 /*
  *                 Sun Public License Notice
- * 
+ *
  * The contents of this file are subject to the Sun Public License
  * Version 1.0 (the "License"). You may not use this file except in
  * compliance with the License. A copy of the License is available at
  * http://www.sun.com/
- * 
+ *
  * The Original Code is NetBeans. The Initial Developer of the Original
  * Code is Sun Microsystems, Inc. Portions Copyright 1997-2003 Sun
  * Microsystems, Inc. All Rights Reserved.
@@ -35,19 +35,17 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
      * being <CODE>gapLength</CODE> long.
      */
     private Object[] array;
-    
+
     /** Starting index of the gap in the array. */
     private int gapStart;
-    
+
     /** Length of the gap */
     private int gapLength;
-    
-    private Object[] insertSingleItem;
-    
+
     public GapObjectArray() {
         this.array = EMPTY_ARRAY;
     }
-    
+
     /**
      * Construct new gap array of objects.
      * @param array use this array as an initial array for processing.
@@ -62,18 +60,17 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
         this.gapStart = length;
         this.gapLength = array.length - length;
     }
-    
+
     public int getItemCount() {
         return array.length - gapLength;
     }
-    
+
     public Object getItem(int index) {
         return array[(index < gapStart) ? index : (index + gapLength)];
     }
 
     public void copyItems(int srcStartIndex, int srcEndIndex,
     Object[] dest, int destIndex) {
-
         rangeCheck(srcStartIndex, srcEndIndex - srcStartIndex);
 
         if (srcEndIndex < gapStart) { // fully below gap
@@ -98,10 +95,10 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
         remove(index, removeCount);
         insertAll(index, newItems);
     }
-    
+
     public void insertItem(int index, Object item) {
         indexCheck(index);
-        
+
         if (gapLength == 0) {
             enlargeGap(1);
         }
@@ -115,10 +112,10 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
     public void insertAll(int index, Object[] items) {
         insertAll(index, items, 0, items.length);
     }
-    
+
     public void insertAll(int index, Object[] items, int off, int len) {
         indexCheck(index);
-        
+
         if (items.length == 0) {
             return;
         }
@@ -134,11 +131,11 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
         gapStart += len;
         gapLength -= len;
     }
-    
+
     public void remove(int index, int count) {
         remove(index, count, null);
     }
-    
+
     public void remove(int index, int count, RemoveUpdater removeUpdater) {
         rangeCheck(index, count);
 
@@ -176,7 +173,7 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
                     }
                     array[clearIndex] = null;
                 }
-                
+
                 index = gapStart + gapLength; // part above the gap
                 gapStart = endIndex - count; // original value of index
                 endIndex += gapLength;
@@ -190,7 +187,7 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
                 }
                 array[index++] = null;
             }
-                
+
         }
 
         gapLength += count;
@@ -198,7 +195,7 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
 
     protected void unoptimizedRemove(int index, int count, RemoveUpdater removeUpdater) {
         rangeCheck(index, count);
-        
+
         int endIndex = index + count;
         if (gapStart != endIndex) {
             moveGap(endIndex);
@@ -221,20 +218,20 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
             Object[] newArray = new Object[newLength];
             int gapEnd = gapStart + gapLength;
             System.arraycopy(array, 0, newArray, 0, gapStart);
-            System.arraycopy(array, gapEnd, newArray, gapStart, 
+            System.arraycopy(array, gapEnd, newArray, gapStart,
                 array.length - gapEnd);
             array = newArray;
             gapStart = array.length;
             gapLength = 0;
         }
     }
-    
+
     protected void movedAboveGapUpdate(Object[] array, int index, int count) {
     }
-    
+
     protected void movedBelowGapUpdate(Object[] array, int index, int count) {
     }
-    
+
     private void moveGap(int index) {
         if (index <= gapStart) { // move gap down
             int moveSize = gapStart - index;
@@ -257,13 +254,13 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
             gapStart += moveSize;
         }
     }
-    
+
     private void clearEmpty(int index, int length) {
         while (--length >= 0) {
             array[index++] = null; // allow GC
         }
     }
-    
+
     private void enlargeGap(int extraLength) {
         int newLength = Math.max(4,
             Math.max(array.length * 2, array.length + extraLength));
@@ -283,7 +280,7 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
             throw new IndexOutOfBoundsException("index=" + index
                 + ", count=" + count + ", getItemCount()=" + getItemCount());
         }
-    } 
+    }
 
     private void indexCheck(int index) {
         if (index > getItemCount()) {
@@ -301,7 +298,7 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
         ) {
             throw new IllegalStateException();
         }
-        
+
         // Check whether the whole gap contains only nulls
         for (int i = gapStart + gapLength - 1; i >= gapStart; i--) {
             if (array[i] != null) {
@@ -309,17 +306,20 @@ public class GapObjectArray implements ObjectArray, ObjectArray.CopyItems {
             }
         }
     }
-    
+
     public String toStringDetail() {
         return "gapStart=" + gapStart + ", gapLength=" + gapLength
             + ", array.length=" + array.length;
     }
-        
-        
+
+    public String toString() {
+        return "GapObjectArray{super="+super.toString()+" array="+java.util.Arrays.toString(array)+" gapStart="+gapStart+" gapEnd="+gapLength+"}";
+    }
+
     public interface RemoveUpdater {
-        
+
         public void removeUpdate(Object removedItem);
-        
+
     }
 
 }
