@@ -134,8 +134,7 @@ final class LineElement implements Element {
     }
 
     public String toString() {
-        return "getStartOffset()=" + getStartOffset() // NOI18N
-            + ", getEndOffset()=" + getEndOffset(); // NOI18N
+        return "LineElement{"+getStartOffset()+".."+getEndOffset()+"}"; // NOI18N
     }
 
 }

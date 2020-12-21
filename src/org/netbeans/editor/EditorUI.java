@@ -1,11 +1,11 @@
 /*
  *                 Sun Public License Notice
- * 
+ *
  * The contents of this file are subject to the Sun Public License
  * Version 1.0 (the "License"). You may not use this file except in
  * compliance with the License. A copy of the License is available at
  * http://www.sun.com/
- * 
+ *
  * The Original Code is NetBeans. The Initial Developer of the Original
  * Code is Sun Microsystems, Inc. Portions Copyright 1997-2000 Sun
  * Microsystems, Inc. All Rights Reserved.
@@ -77,7 +77,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     private static final Dimension NULL_DIMENSION = new Dimension(0, 0);
 
     private static final int STYLE_CNT = 4;
-    
+
     private static final boolean debugUpdateLineHeight
     = Boolean.getBoolean("netbeans.debug.editor.updateLineHeight");
 
@@ -98,7 +98,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     static {
         Settings.addSettingsChangeListener( clearingListener );
     }
-   
+
     public void clearSharedColoringMaps()
     {
         sharedColoringMaps.clear();
@@ -189,7 +189,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     int textLeftMarginWidth;
 
     /** This is the full margin around the text. The left margin
-    * is an addition of component's margin and lineNumberWidth 
+    * is an addition of component's margin and lineNumberWidth
     * and textLeftMarginWidth.
     */
     Insets textMargin = NULL_INSETS;
@@ -243,14 +243,14 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     /** Glyph gutter used for drawing of annotation glyph icons. */
     private GlyphGutter glyphGutter = null;
 
-    /** The line numbers can be shown in glyph gutter and therefore it is necessary 
-     * to disable drawing of lines here. During the printing on the the other hand, line 
+    /** The line numbers can be shown in glyph gutter and therefore it is necessary
+     * to disable drawing of lines here. During the printing on the the other hand, line
      * numbers must be visible. */
     private boolean disableLineNumbers = true;
 
     /** Left right corner of the JScrollPane */
     private JPanel glyphCorner;
-    
+
     /** Construct extended UI for the use with a text component */
     public EditorUI() {
         Settings.addSettingsChangeListener(this);
@@ -327,7 +327,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
 
         // Make sure all the things depending on non-null component will be updated
         settingsChange(null);
-        
+
         // fix for issue #16352
         getDefaultColoring().apply(component);
     }
@@ -337,10 +337,10 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     */
     public void uninstallUI(JTextComponent c) {
         synchronized (getComponentLock()) {
-            
+
             // fix for issue 12996
             if (component != null) {
-                
+
             // stop listening on caret
             Caret caret = component.getCaret();
             if (caret != null) {
@@ -350,7 +350,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
             // stop listening on component
             component.removePropertyChangeListener(this);
             component.removeFocusListener(focusL);
-            
+
             }
 
             BaseDocument doc = getDocument();
@@ -418,11 +418,11 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
                                        : SettingsDefaults.defaultPrintLineNumberVisible
                                                               );
             lineNumberVisible = lineNumberEnabled && lineNumberVisibleSetting;
-            
+
             // if this is printing, the drawing of original line numbers must be enabled
             if (component == null)
                 disableLineNumbers = false;
-            
+
             if (disableLineNumbers)
                 lineNumberVisible = false;
         }
@@ -512,7 +512,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
 
                 // fix for issues 13842, 14003
                 if (SwingUtilities.isEventDispatchThread()) {
-                    component.setKeymap(Utilities.getKit(component).getKeymap());                    
+                    component.setKeymap(Utilities.getKit(component).getKeymap());
                     BaseTextUI ui = (BaseTextUI)component.getUI();
                     ui.updateHeight();
                     component.repaint();
@@ -524,7 +524,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
                                 if (c != null) {
                                     BaseKit kit = Utilities.getKit(c);
                                     if (kit != null) {
-                                        c.setKeymap(kit.getKeymap());                                    
+                                        c.setKeymap(kit.getKeymap());
                                         BaseTextUI ui = (BaseTextUI)c.getUI();
                                         if (ui != null) {
                                             ui.updateHeight();
@@ -552,7 +552,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     public void stateChanged(ChangeEvent evt) {
         SwingUtilities.invokeLater(
             new Runnable() {
-                
+
                 /** @return true if the document supports guarded sections
                  * and when either the caret is in guarded block
                  * or when selection spans any guarded block(s).
@@ -571,13 +571,13 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
                                 break;
                             }
                         }
-                        
+
                         inGuardedBlock = (gdoc.isPosGuarded(c.getCaretPosition()) ||
                             selectionSpansGuardedSection);
                     }
                     return inGuardedBlock;
                 }
-                
+
                 public void run() {
                     JTextComponent c = component;
                     if (c != null) {
@@ -601,7 +601,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
                             if (a != null) {
                                 a.setEnabled(selectionVisible && !caretGuarded && isEditable);
                             }
-                            
+
                             a = kit.getActionByName(BaseKit.pasteAction);
                             if (a != null) {
                                 a.setEnabled(!caretGuarded && isEditable);
@@ -627,7 +627,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
         }
 
         if (oldDoc != null)
-            oldDoc.getBookmarks().removeAll();            
+            oldDoc.getBookmarks().removeAll();
     }
 
     public void propertyChange(PropertyChangeEvent evt) {
@@ -751,7 +751,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
         lineAscent = (int)(maxAscent * lineHeightCorrection);
 
     }
-    
+
     /** Return whether the fonts are already initialized or not.
      */
     boolean isFontsInited() {
@@ -811,7 +811,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
 
         /* JDK1.3 patch for the behavior that occurs when the line is wider
         * than the screen and the user first clicks End key to go to the end
-        * and then goes back by (Ctrl+)Left. As the non-simple scrolling mode 
+        * and then goes back by (Ctrl+)Left. As the non-simple scrolling mode
         * is used in JViewport in 1.3 the line number block appears shifted
         * to the right and gets repainted after 300ms which looks ugly.
         * The patch is to set the simple scrolling mode into JViewport.
@@ -834,7 +834,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
             glyphGutter.update();
             updateScrollPaneCornerColor();
         }
-        
+
         // FIx of #14295
         updateVirtualHeight(0);
 
@@ -857,7 +857,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
             // revalidate the component
             ((BaseTextUI)component.getUI()).preferenceChanged(true, true);
         }
- 
+
     }
 
     public final JTextComponent getComponent() {
@@ -932,10 +932,10 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
 
         // Install the status-bar panel to the bottom
         ec.add(getStatusBar().getPanel(), BorderLayout.SOUTH);
-        
+
         return ec;
     }
-    
+
     /** Whether this ui uses extComponent or not.
      * @see #getExtComponent()
      */
@@ -1074,7 +1074,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
         if (height <= 0) { //compute real height - fix of #14295
             height = (int)((TextUI)component.getUI()).getRootView(component).getPreferredSpan(View.Y_AXIS);
         }
-        
+
         if (height != virtualSize.height) {
             virtualSize.height = height;
             virtualSizeUpdated = true;
@@ -1247,7 +1247,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
                 : scrollFindInsets.left * defaultSpaceWidth;
 
             int nx = Math.max(r.x - cnvFI, 0);
-            
+
             cnvFI = (scrollFindInsets.right < 0)
                 ? (- bounds.width * scrollFindInsets.right / 100)
                 : scrollFindInsets.right * defaultSpaceWidth;
@@ -1510,7 +1510,7 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     public boolean isGlyphGutterVisible() {
         return glyphGutter != null;
     }
-    
+
     public GlyphGutter getGlyphGutter() {
         return glyphGutter;
     }
@@ -1518,13 +1518,13 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
     protected void updateScrollPaneCornerColor() {
         Coloring lineColoring = (Coloring)getColoringMap().get(SettingsNames.LINE_NUMBER_COLORING);
         Coloring defaultColoring = (Coloring)getDefaultColoring();
-        
+
         Color backgroundColor;
         if (lineColoring.getBackColor() != null)
             backgroundColor = lineColoring.getBackColor();
         else
             backgroundColor = defaultColoring.getBackColor();
-        
+
         glyphCorner.setBackground(backgroundColor);
     }
 }

@@ -244,7 +244,6 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
         tree.setTransferHandler(new TransferHandler() {
             @Override
             public boolean canImport(TransferHandler.TransferSupport support) {
-                System.out.println("Support="+support);
                 return false;
             }
         });

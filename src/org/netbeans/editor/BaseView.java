@@ -226,7 +226,6 @@ public abstract class BaseView extends View {
         buf.append(Integer.toString(index));
         buf.append("] "); // NOI18N
         buf.append(this.toString());
-        System.out.println(buf);
         int childrenCnt = getViewCount();
         if (childrenCnt > 0) {
             for (int i = 0; i < childrenCnt; i++) {

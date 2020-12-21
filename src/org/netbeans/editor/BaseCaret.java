@@ -1,7 +1,7 @@
 /*
  *                 Sun Public License Notice
  * 
- * The contents of this file are subject to the Sun Public License
+ * The contents of   file are subject to the Sun Public License
  * Version 1.0 (the "License"). You may not use this file except in
  * compliance with the License. A copy of the License is available at
  * http://www.sun.com/
@@ -421,7 +421,7 @@ AtomicLockListener {
          * and if the views doc listener is added AFTER the caret's listener
          * then the views are not updated yet. Using SwingUtilities.invokeLater()
          * should solve the problem although the view extent could flip
-         * once the extent would be explicitely scrolled to area that does
+         * once the extent would be explicitly scrolled to area that does
          * not cover the caret's rectangle. It needs to be tested
          * so that it does not happen.
          */

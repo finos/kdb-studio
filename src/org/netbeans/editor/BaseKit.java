@@ -823,14 +823,14 @@ public class BaseKit extends DefaultEditorKit
                 boolean ctrl = ((mod & ActionEvent.CTRL_MASK) != 0);
                 // On the mac, norwegian and french keyboards use Alt to do bracket characters.
                 // This replicates Apple's modification DefaultEditorKit.DefaultKeyTypedAction
-                boolean alt = isMac ? ((mod & ActionEvent.META_MASK) != 0) : 
+                boolean alt = isMac ? ((mod & ActionEvent.META_MASK) != 0) :
                     ((mod & ActionEvent.ALT_MASK) != 0);
-                
-                
+
+
                 if (alt || ctrl) {
                     return;
                 }
-                
+
                 // Check whether the target is enabled and editable
                 if (!target.isEditable() || !target.isEnabled()) {
                     target.getToolkit().beep();
@@ -866,7 +866,7 @@ public class BaseKit extends DefaultEditorKit
                                            ) { // overwrite current char
                                             doc.atomicLock();
                                             try {
-                                              insertString(doc, dotPos, caret, cmd, true); 
+                                              insertString(doc, dotPos, caret, cmd, true);
                                             } finally {
                                               doc.atomicUnlock();
                                             }
@@ -894,37 +894,37 @@ public class BaseKit extends DefaultEditorKit
 
             }
         }
-        
 
-      /** 
+
+      /**
        * Hook to insert the given string at the given position into
        * the given document in insert-mode, no selection, writeable
        * document. Designed to be overridden by subclasses that want
        * to intercept inserted characters.
        */
-      protected void insertString(BaseDocument doc,  
-				  int dotPos, 
-				  Caret caret,
-				  String str, 
-				  boolean overwrite) 
-	throws BadLocationException 
+      protected void insertString(BaseDocument doc,
+                  int dotPos,
+                  Caret caret,
+                  String str,
+                  boolean overwrite)
+    throws BadLocationException
       {
-	if (overwrite) doc.remove(dotPos, 1);
-	doc.insertString(dotPos, str, null);
+    if (overwrite) doc.remove(dotPos, 1);
+    doc.insertString(dotPos, str, null);
       }
-        
-      /** 
+
+      /**
        * Hook to insert the given string at the given position into
        * the given document in insert-mode with selection visible
        * Designed to be overridden by subclasses that want
        * to intercept inserted characters.
        */
-      protected void replaceSelection(JTextComponent target,  
-				  int dotPos, 
-				  Caret caret,
-				  String str, 
-				  boolean overwrite) 
-	throws BadLocationException 
+      protected void replaceSelection(JTextComponent target,
+                  int dotPos,
+                  Caret caret,
+                  String str,
+                  boolean overwrite)
+    throws BadLocationException
       {
           target.replaceSelection(str);
       }
@@ -963,8 +963,13 @@ public class BaseKit extends DefaultEditorKit
                 Caret caret = target.getCaret();
                 int dotPos = caret.getDot();
                 BaseDocument doc = (BaseDocument) target.getDocument();
-                dotPos = doc.getFormatter().indentNewLine(doc, dotPos);
-                caret.setDot(dotPos);
+                doc.atomicLock();
+                try {
+                    dotPos = doc.getFormatter().indentNewLine(doc, dotPos);
+                    caret.setDot(dotPos);
+                } finally {
+                    doc.atomicUnlock();
+                }
             }
         }
 

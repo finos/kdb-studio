@@ -397,13 +397,6 @@ public class MultiKeymap implements Keymap {
                 ignoreNextTyped = true;
             }
         }
-
-/*            System.out.println("key=" + key + ", keyChar=" + (int)key.getKeyChar() + ", keyCode=" + key.getKeyCode() + ", keyModifiers=" + key.getModifiers() // NOI18N
-                + ", ignoreNextTyped=" + ignoreNextTyped + ", context=" + context // NOI18N
-                + ", returning action=" + ((ret == EMPTY_ACTION) ? "EMPTY_ACTION" : ((ret == null) ? "null" : ((ret instanceof javax.swing.text.TextAction) // NOI18N
-                    ? ret.getValue(javax.swing.Action.NAME) : ret.getClass()))));
-*/
-                    
         return ret;
     }
 

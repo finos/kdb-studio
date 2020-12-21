@@ -332,7 +332,10 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
         if (!(edit instanceof DocumentContent.Edit)) return null;
         UndoableEdit last = lastEdit();
         if (!(last instanceof DocumentContent.Edit)) return null;
-        if (((DocumentContent.Edit)last).tryAppend((DocumentContent.Edit)edit)) return last;
+        if (((DocumentContent.Edit)last).tryAppend((DocumentContent.Edit)edit)) {
+            lfCount = -1;
+            return last;
+        }
         return null;
     }
 

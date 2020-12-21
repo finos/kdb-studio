@@ -21,6 +21,7 @@ import javax.swing.undo.AbstractUndoableEdit;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoableEdit;
+import java.util.ArrayList;
 
 /**
  * Content of the document.
@@ -310,7 +311,7 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
             this.offset = offset;
             this.length = -length;
 
-            // Added to make sure the text is not inited later at unappropriate time
+            // Added to make sure the text is not inited later at inappropriate time
             this.text = getText(offset, length);
 
             undoOrRedo(-length, false); // pretend redo
@@ -325,9 +326,11 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
 
         private MarkVector.Undo markVectorUndo;
 
-        private UndoableEdit lineUndo;
+        private ArrayList<UndoableEdit> lineUndo = new ArrayList();
 
         private int syntaxUpdateOffset;
+
+        private boolean initialAction = true;   //whether we are calling undoOrRedo in the constructor
 
         public String toString() {
             return super.toString() +" offset="+offset+" length="+length+" text="+text;
@@ -353,18 +356,11 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
         }
 
         private void undoOrRedo(int len, boolean undo) {
-
-            boolean lineUndoAssigned = false; // whether lineUndo was assigned in this body
-
             // Line undo information must be obtained before doing the actual remove
-            if (lineUndo == null && len < 0) {
-                lineUndo = getLineRoot().removeUpdate(offset, -len);
-
-                if (lineUndo == null) { // must be valid value
-                    lineUndo = INVALID_EDIT; // must not be undone - can't be flyweight!!!
-                }
-
-                lineUndoAssigned = true;
+            if (initialAction && len < 0) {
+                UndoableEdit ru = getLineRoot().removeUpdate(offset, -len);
+                if (ru != null)
+                    lineUndo.add(ru);
             }
 
             // Fix text content
@@ -380,30 +376,25 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
             doc.marksStorage.update(offset, len, null);
 
             // Fix line elements structure
-            if (lineUndo != null) {
-                if (!lineUndoAssigned && lineUndo != INVALID_EDIT) {
-                    if (undo) {
-                        lineUndo.undo();
-                    } else {
-                        lineUndo.redo();
-                    }
+            if (!initialAction) {
+                if (undo) {
+                    for (int i=lineUndo.size()-1; i>=0; --i)
+                        lineUndo.get(i).undo();
+                } else {
+                    for (int i=0; i<lineUndo.size(); ++i)
+                        lineUndo.get(i).redo();
                 }
+           }
 
-            } else { // line undo not yet assigned
-                if (len < 0) { // had to be assigned before
-                    throw new IllegalStateException();
-                }
-                lineUndo = getLineRoot().insertUpdate(offset, length);
-
-                if (lineUndo == null) { // must be valid value
-                    lineUndo = INVALID_EDIT; // must not be undone - can't be flyweight!!!
-                }
-
-                lineUndoAssigned = true;
+            if (initialAction && len > 0) {
+                UndoableEdit iu = getLineRoot().insertUpdate(offset, length);
+                if (iu != null)
+                    lineUndo.add(iu);
             }
 
             // Update syntax state infos (based on updated text and line structures
             syntaxUpdateOffset = getLineRoot().fixSyntaxStateInfos(offset, len);
+            initialAction = false;
         }
 
         /**
@@ -417,12 +408,17 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
             return syntaxUpdateOffset;
         }
 
+        private void appendLineUndo(Edit other) {
+            lineUndo.addAll(other.lineUndo);
+        }
+
         public boolean tryAppend(Edit other) {
             if (other.length>0) {
                 if (this.length <= 0) return false;
                 if (this.offset+this.length != other.offset) return false;
                 this.text += other.text;
                 this.length += other.length;
+                this.appendLineUndo(other);
                 return true;
             }
             if (other.length<0) {
@@ -431,11 +427,13 @@ final class DocumentContent implements AbstractDocument.Content, CharSeq, GapSta
                     this.text = other.text + this.text;
                     this.offset += other.length;
                     this.length += other.length;
+                    this.appendLineUndo(other);
                     return true;
                 }
                 if (this.offset == other.offset) {  //deleting forwards
                     this.text += other.text;
                     this.length += other.length;
+                    this.appendLineUndo(other);
                     return true;
                 }
                 return false;
