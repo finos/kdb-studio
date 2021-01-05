@@ -347,8 +347,14 @@ public class c {
         if (t == 99)
             return new K.Dict(r(), r());
         byte attr = b[j++];
-        if (t == 98)
-            return new K.Flip((K.Dict) r());
+        if (t == 98) {
+            K.Dict d = (K.Dict)r();
+            if (d.x.type == 11 && d.y.type == 0) {
+                return new K.Flip(d);
+            } else {
+                return d;
+            }
+        }
         n = ri();
         switch (t) {
             case 0: {
