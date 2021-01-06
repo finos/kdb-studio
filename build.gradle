@@ -17,7 +17,10 @@ dependencies {
     compile group: 'org.jfree', name: 'jfreechart', version: '1.0.14'
     compile group: 'org.apache.poi', name: 'poi', version: '4.1.2'
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '4.1.2'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.11.2'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.2'
+
+    testCompile "org.junit.jupiter:junit-jupiter-api:${JUNIT_JUPITER_VERSION}"
+    testCompile "org.junit.jupiter:junit-jupiter-engine:${JUNIT_JUPITER_VERSION}"
 }
 
 sourceSets {
@@ -31,6 +34,29 @@ sourceSets {
             include 'org/netbeans/editor/Bundle*.properties'
             include 'images/**'
         }
+    }
+
+    test {
+        java {
+            srcDirs = ['tests-unit']
+        }
+
+        resources {
+            srcDirs = java.srcDirs
+            compileClasspath = main.output + compileClasspath
+            runtimeClasspath = main.output + runtimeClasspath
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+
+    testClassesDirs = sourceSets.test.output
+    classpath = sourceSets.test.runtimeClasspath
+
+    testLogging {
+        events "passed", "skipped", "failed"
     }
 }
 
