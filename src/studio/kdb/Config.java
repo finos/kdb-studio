@@ -658,7 +658,7 @@ public class Config {
     }
 
     public int getResultTabsCount() {
-        return Integer.parseInt(p.getProperty("resultTabsCount","5"));
+        return Integer.parseInt(p.getProperty("resultTabsCount","6"));
     }
 
     public void setResultTabsCount(int value) {
