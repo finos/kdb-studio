@@ -652,8 +652,17 @@ public class Config {
         return Boolean.parseBoolean(p.getProperty("showServerComboBox","true"));
     }
 
+    public boolean isShowConsoleView() {
+        return Boolean.parseBoolean(p.getProperty("showConsoleView", "true"));
+    }
+
     public void setShowServerComboBox(boolean value) {
         p.setProperty("showServerComboBox", "" + value);
+        save();
+    }
+
+    public void setShowConsoleView(boolean value) {
+        p.setProperty("showConsoleView", Boolean.toString(value));
         save();
     }
 
