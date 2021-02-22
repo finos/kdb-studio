@@ -373,5 +373,4 @@ page at http://checkstyle.sourceforge.net/config.html -->
 
         <module name="ArrayTypeStyle"/>
     </module>
-
 </module>
