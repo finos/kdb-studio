@@ -1,3 +1,6 @@
+**Note**: This repository hosts the FINOS community developed extensions to KDB studio. The maintainers of this groups can be contacted at data-tech-kdb@finos.org.
+
+
 Studio for kdb+
 =========
 
