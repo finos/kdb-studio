@@ -27,11 +27,11 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 8
-    - name: Build
+    - name: Build KDB Studio (with gradle)
       uses: eskatos/gradle-command-action@v1
       with:
-        arguments: install
-    - name: Test
+        arguments: check install
+    - name: Integration Test
       run: ./test.sh
     - name: Show workspace
       run: find
