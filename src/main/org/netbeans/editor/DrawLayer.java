@@ -108,7 +108,7 @@ public interface DrawLayer {
     public int updateLineNumberContext(int lineNumber, DrawContext ctx);
 
     /** Abstract implementation of the draw-layer. */
-    public static abstract class AbstractLayer implements DrawLayer {
+    public abstract static  class AbstractLayer implements DrawLayer {
 
         /** Name of this layer. The name of the layer must be unique among
         * layers installed into EditorUI

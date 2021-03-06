@@ -1,3 +1,6 @@
+package studio;
+
+import java.awt.event.KeyEvent;
 import org.assertj.swing.core.KeyPressInfo;
 import org.assertj.swing.edt.GuiActionRunner;
 import org.assertj.swing.fixture.FrameFixture;
@@ -6,8 +9,6 @@ import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 import studio.ui.StudioPanel;
-
-import java.awt.event.KeyEvent;
 
 public class StudioTest extends AssertJSwingJUnitTestCase {
 

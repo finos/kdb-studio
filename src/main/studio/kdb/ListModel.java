@@ -7,6 +7,7 @@ public class ListModel extends KTableModel {
         super(list.count());
         this.list = list;
     }
+
     @Override
     public boolean isKey(int column) {
         return false;

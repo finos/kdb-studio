@@ -537,7 +537,7 @@ public class SettingsUtil {
 
     /** Initializer for the token-coloring settings.
     */
-    public static abstract class TokenColoringInitializer
+    public abstract static  class TokenColoringInitializer
     extends Settings.AbstractInitializer {
 
         /** Token context for which the colorings are being initialized. */

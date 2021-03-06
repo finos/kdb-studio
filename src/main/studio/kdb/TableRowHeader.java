@@ -5,7 +5,13 @@ import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import javax.swing.*;
+import javax.swing.AbstractListModel;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JTable;
+import javax.swing.ListCellRenderer;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.event.MouseInputAdapter;
 
 public class TableRowHeader extends JList {
@@ -15,7 +21,7 @@ public class TableRowHeader extends JList {
         Insets i = new RowHeaderRenderer().getInsets();
         int w = i.left + i.right;
         int width = SwingUtilities.computeStringWidth(table.getFontMetrics(getFont()),
-                                                      (table.getRowCount() < 9999 ? "9999" : "" + (table.getRowCount() - 1)));
+            (table.getRowCount() < 9999 ? "9999" : "" + (table.getRowCount() - 1)));
         // used to be rowcount - 1 as 0 based index
         setFixedCellWidth(w + width);
     }
@@ -24,15 +30,15 @@ public class TableRowHeader extends JList {
         //  super();
         this.table = table;
         table.addPropertyChangeListener(new PropertyChangeListener() {
-                                        public void propertyChange(PropertyChangeEvent propertyChangeEvent) {
-                                            if ("zoom".equals(propertyChangeEvent.getPropertyName())) {
-                                                setFont(table.getFont());
-                                                setFixedCellHeight(table.getRowHeight());
-                                                recalcWidth();
-                                                setCellRenderer(new RowHeaderRenderer());
-                                            }
-                                        }
-                                    });
+            public void propertyChange(PropertyChangeEvent propertyChangeEvent) {
+                if ("zoom".equals(propertyChangeEvent.getPropertyName())) {
+                    setFont(table.getFont());
+                    setFixedCellHeight(table.getRowHeight());
+                    recalcWidth();
+                    setCellRenderer(new RowHeaderRenderer());
+                }
+            }
+        });
         setAutoscrolls(false);
         setCellRenderer(new RowHeaderRenderer());
         setFixedCellHeight(table.getRowHeight());
@@ -52,22 +58,22 @@ public class TableRowHeader extends JList {
                 public void mousePressed(MouseEvent e) {
                     int index = locationToIndex(e.getPoint());
                     startIndex = index;
-                    table.setColumnSelectionInterval(0,table.getColumnCount() - 1);
-                    table.setRowSelectionInterval(index,index);
+                    table.setColumnSelectionInterval(0, table.getColumnCount() - 1);
+                    table.setRowSelectionInterval(index, index);
                     table.requestFocus();
                 }
 
                 public void mouseReleased(MouseEvent e) {
                     int index = locationToIndex(e.getPoint());
-                    table.setColumnSelectionInterval(0,table.getColumnCount() - 1);
-                    table.setRowSelectionInterval(startIndex,index);
+                    table.setColumnSelectionInterval(0, table.getColumnCount() - 1);
+                    table.setRowSelectionInterval(startIndex, index);
                     table.requestFocus();
                 }
 
                 public void mouseDragged(MouseEvent e) {
                     int index = locationToIndex(e.getPoint());
-                    table.setColumnSelectionInterval(0,table.getColumnCount() - 1);
-                    table.setRowSelectionInterval(startIndex,index);
+                    table.setColumnSelectionInterval(0, table.getColumnCount() - 1);
+                    table.setRowSelectionInterval(startIndex, index);
                     table.requestFocus();
                 }
                 /*
@@ -124,7 +130,8 @@ public class TableRowHeader extends JList {
             setForeground(UIManager.getColor("TableHeader.foreground"));
         }
 
-        public Component getListCellRendererComponent(JList list,Object value,int index,boolean isSelected,boolean cellHasFocus) {
+        public Component getListCellRendererComponent(JList list, Object value, int index,
+                                                      boolean isSelected, boolean cellHasFocus) {
             setText((value == null) ? "" : value.toString());
             return this;
         }

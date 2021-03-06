@@ -12,8 +12,8 @@ public class HtmlSelection implements Transferable {
 
     static {
         try {
-            HTML_FLAVORS = new DataFlavor[]{
-                    new DataFlavor("text/html"),
+            HTML_FLAVORS = new DataFlavor[] {
+                new DataFlavor("text/html"),
             };
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
@@ -37,7 +37,8 @@ public class HtmlSelection implements Transferable {
     }
 
     @Override
-    public Object getTransferData(DataFlavor dataFlavor) throws UnsupportedFlavorException, IOException {
+    public Object getTransferData(DataFlavor dataFlavor)
+        throws UnsupportedFlavorException, IOException {
         return new ByteArrayInputStream(html.getBytes());
     }
 }

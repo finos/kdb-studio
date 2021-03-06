@@ -73,10 +73,10 @@ public class GlyphGutter extends JComponent implements Annotations.AnnotationsLi
     private int numberWidth;
 
     /** Predefined width of the glyph icons */
-    private final static int glyphWidth = 16;
+    private static final int glyphWidth = 16;
 
     /** Preddefined width of the cycling button */
-    private final static int glyphButtonWidth = 9;
+    private static final int glyphButtonWidth = 9;
     
     /** Whether the line numbers are shown or not */
     private boolean showLineNumbers = true;

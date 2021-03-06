@@ -190,7 +190,7 @@ public class SettingsDefaults {
           SettingsNames.STATUS_BAR_BOLD_COLORING
       };
 
-        private final static int menuShortcutKeyMask= java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+        private static final int menuShortcutKeyMask= java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
     public static final MultiKeyBinding[] defaultKeyBindings
     = new MultiKeyBinding[] {

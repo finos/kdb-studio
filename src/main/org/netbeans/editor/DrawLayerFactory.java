@@ -120,7 +120,7 @@ public class DrawLayerFactory {
     * It requires only activation mark since it deactivates automatically
     * at the end of line.
     */
-    public static abstract class ColorLineLayer extends DrawLayer.AbstractLayer {
+    public abstract static  class ColorLineLayer extends DrawLayer.AbstractLayer {
 
         /** Coloring to use for highlighting */
         Coloring coloring;

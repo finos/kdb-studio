@@ -580,7 +580,7 @@ public class Settings {
     }
 
     /** Abstract implementation of the initializer dealing with the name. */
-    public static abstract class AbstractInitializer implements Initializer {
+    public abstract static  class AbstractInitializer implements Initializer {
 
         private String name;
 
@@ -609,7 +609,7 @@ public class Settings {
     }
 
     /** Initializer sorter that delegates to another sorter. */
-    public static abstract class FilterInitializerSorter {
+    public abstract static  class FilterInitializerSorter {
 
         private InitializerSorter delegate;
 

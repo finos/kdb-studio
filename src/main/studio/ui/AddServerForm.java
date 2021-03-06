@@ -1,8 +1,7 @@
 package studio.ui;
 
+import java.awt.Window;
 import studio.kdb.Server;
-
-import java.awt.*;
 
 public class AddServerForm extends ServerForm {
     public AddServerForm(Window owner) {

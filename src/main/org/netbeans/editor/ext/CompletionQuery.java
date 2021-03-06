@@ -108,7 +108,7 @@ public interface CompletionQuery {
     * The very basic funztionality of Result is implemented by this class,
     * but parts general enough to not need to be overriden.
     */
-    public static abstract class AbstractResult implements Result {
+    public abstract static  class AbstractResult implements Result {
 
         /** The List of the ResultItem instances - the content of the result */
         private List data;

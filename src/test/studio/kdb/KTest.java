@@ -1,11 +1,10 @@
 package studio.kdb;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.Array;
 import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class KTest {
 

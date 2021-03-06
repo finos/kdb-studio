@@ -606,7 +606,7 @@ public class Annotations implements DocumentListener {
      * the references to all annotations from one line in List and also
      * stores which annotation is active, count of visible annotations 
      * and line number. */
-    static public class LineAnnotations extends Object {
+    public static class LineAnnotations extends Object {
 
         /** List with all annotations in this LineAnnotations */
         private LinkedList annos;
