@@ -121,7 +121,6 @@ public class KTest {
         return baseVector;
     }
 
-
     @Test
     public void testIntegerToString() throws Exception {
         check(new K.KInteger(-123), "-123", "-123i");
@@ -255,37 +254,37 @@ public class KTest {
     public void testTimestampToString() throws Exception {
         check(new K.KTimestamp(-123456789), "1999.12.31 23:59:59.876543211", "1999.12.31 23:59:59.876543211");
         check(new K.KTimestamp(123456), "2000.01.01 00:00:00.000123456", "2000.01.01 00:00:00.000123456");
-        check(new K.KTimestamp(-Long.MAX_VALUE), "-0Wp", "-0Wp");
-        check(new K.KTimestamp(Long. MAX_VALUE), "0Wp", "0Wp");
-        check(new K.KTimestamp(Long.MIN_VALUE), "0Np", "0Np");
+        check(new K.KTimestamp(-Long.MAX_VALUE), "-0W", "-0Wp");
+        check(new K.KTimestamp(Long. MAX_VALUE), "0W", "0Wp");
+        check(new K.KTimestamp(Long.MIN_VALUE), "0N", "0Np");
 
-        check(vector(K.KTimestampVector.class, -10, 10, 3), "1999.12.31 23:59:59.999999990 2000.01.01 00:00:00.000000010 2000.01.01 00:00:00.000000003", "1999.12.31 23:59:59.999999990 2000.01.01 00:00:00.000000010 2000.01.01 00:00:00.000000003");
+        check(vector(K.KTimestampVector.class, -10, 10, 3), "1999.12.31 23:59:59.999999990 2000.01.01 00:00:00.000000010 2000.01.01 00:00:00.000000003", "1999.12.31 23:59:59.999999990 2000.01.01 00:00:00.000000010 2000.01.01 00:00:00.000000003p");
         check(vector(K.KTimestampVector.class), "`timestamp$()", "`timestamp$()");
-        check(vector(K.KTimestampVector.class, 0), "enlist 2000.01.01 00:00:00.000000000", "enlist 2000.01.01 00:00:00.000000000");
-        check(vector(K.KTimestampVector.class, 5, Long.MIN_VALUE, Long.MAX_VALUE, -Long.MAX_VALUE), "2000.01.01 00:00:00.000000005 0Np 0Wp -0Wp", "2000.01.01 00:00:00.000000005 0Np 0Wp -0Wp");
+        check(vector(K.KTimestampVector.class, 0), "enlist 2000.01.01 00:00:00.000000000", "enlist 2000.01.01 00:00:00.000000000p");
+        check(vector(K.KTimestampVector.class, 5, Long.MIN_VALUE, Long.MAX_VALUE, -Long.MAX_VALUE), "2000.01.01 00:00:00.000000005 0N 0W -0W", "2000.01.01 00:00:00.000000005 0N 0W -0Wp");
     }
 
     @Test
     public void testTimespanToString() throws Exception {
         check(new K.KTimespan(-765432123456789L), "-8D20:37:12.123456789", "-8D20:37:12.123456789");
         check(new K.KTimespan(123456), "00:00:00.000123456", "00:00:00.000123456");
-        check(new K.KTimespan(-Long.MAX_VALUE), "-0Wn", "-0Wn");
-        check(new K.KTimespan(Long. MAX_VALUE), "0Wn", "0Wn");
-        check(new K.KTimespan(Long.MIN_VALUE), "0Nn", "0Nn");
+        check(new K.KTimespan(-Long.MAX_VALUE), "-0W", "-0Wn");
+        check(new K.KTimespan(Long. MAX_VALUE), "0W", "0Wn");
+        check(new K.KTimespan(Long.MIN_VALUE), "0N", "0Nn");
 
-        check(vector(K.KTimespanVector.class, -10, 10, 3), "-00:00:00.000000010 00:00:00.000000010 00:00:00.000000003", "-00:00:00.000000010 00:00:00.000000010 00:00:00.000000003");
+        check(vector(K.KTimespanVector.class, -10, 10, 3), "-00:00:00.000000010 00:00:00.000000010 00:00:00.000000003", "-00:00:00.000000010 00:00:00.000000010 00:00:00.000000003n");
         check(vector(K.KTimespanVector.class), "`timespan$()", "`timespan$()");
-        check(vector(K.KTimespanVector.class, 0), "enlist 00:00:00.000000000", "enlist 00:00:00.000000000");
-        check(vector(K.KTimespanVector.class, 5, Long.MIN_VALUE, Long.MAX_VALUE, -Long.MAX_VALUE), "00:00:00.000000005 0Nn 0Wn -0Wn", "00:00:00.000000005 0Nn 0Wn -0Wn");
+        check(vector(K.KTimespanVector.class, 0), "enlist 00:00:00.000000000", "enlist 00:00:00.000000000n");
+        check(vector(K.KTimespanVector.class, 5, Long.MIN_VALUE, Long.MAX_VALUE, -Long.MAX_VALUE), "00:00:00.000000005 0N 0W -0W", "00:00:00.000000005 0N 0W -0Wn");
     }
 
     @Test
     public void testDateToString() throws Exception {
         check(new K.KDate(-1234), "1996.08.15", "1996.08.15");
         check(new K.KDate(123456), "2338.01.05", "2338.01.05");
-        check(new K.KDate(-Integer.MAX_VALUE), "-0Wd", "-0Wd");
-        check(new K.KDate(Integer. MAX_VALUE), "0Wd", "0Wd");
-        check(new K.KDate(Integer.MIN_VALUE), "0Nd", "0Nd");
+        check(new K.KDate(-Integer.MAX_VALUE), "-0W", "-0Wd");
+        check(new K.KDate(Integer. MAX_VALUE), "0W", "0Wd");
+        check(new K.KDate(Integer.MIN_VALUE), "0N", "0Nd");
 
         check(vector(K.KDateVector.class, -10, 10, 3), "1999.12.22 2000.01.11 2000.01.04", "1999.12.22 2000.01.11 2000.01.04");
         check(vector(K.KDateVector.class), "`date$()", "`date$()");
@@ -298,9 +297,9 @@ public class KTest {
         check(new K.KTime(-1234567890), "17:03:52.110", "17:03:52.110");
         check(new K.KTime(323456789), "17:50:56.789", "17:50:56.789");
 
-        check(new K.KTime(-Integer.MAX_VALUE), "-0Wt", "-0Wt");
-        check(new K.KTime(Integer. MAX_VALUE), "0Wt", "0Wt");
-        check(new K.KTime(Integer.MIN_VALUE), "0Nt", "0Nt");
+        check(new K.KTime(-Integer.MAX_VALUE), "-0W", "-0Wt");
+        check(new K.KTime(Integer. MAX_VALUE), "0W", "0Wt");
+        check(new K.KTime(Integer.MIN_VALUE), "0N", "0Nt");
 
         check(vector(K.KTimeVector.class, -10, 10, 3), "23:59:59.990 00:00:00.010 00:00:00.003", "23:59:59.990 00:00:00.010 00:00:00.003");
         check(vector(K.KTimeVector.class), "`time$()", "`time$()");

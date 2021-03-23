@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -753,6 +754,8 @@ public class K {
     }
 
     public static class KDate extends KBase {
+        private static final DateFormat DEFAULT_DATE_FORMAT = DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.getDefault());
+
         public String getDataType() {
             return "Date";
         }
@@ -770,13 +773,13 @@ public class K {
 
         public String toString(boolean showType) {
             if (isNull())
-                return "0Nd";
+                return showType ? "0Nd" :"0N";
             else if (date == Integer.MAX_VALUE)
-                return "0Wd";
+                return showType ? "0Wd" : "0W";
             else if (date == -Integer.MAX_VALUE)
-                return "-0Wd";
+                return showType ? "-0Wd" : "-0W";
             else
-                return sd("yyyy.MM.dd", new Date(86400000L * (date + 10957)));
+                return sd("yyyy.MM.dd", toDate());
         }
 
         public void toString(LimitedWriter w, boolean showType) throws IOException {
@@ -785,6 +788,18 @@ public class K {
 
         public Date toDate() {
             return new Date(86400000L * (date + 10957));
+        }
+
+        public String toExcelDate() {
+            if (isNull())
+                return "0N";
+            else if (date == Integer.MAX_VALUE)
+                return "0W";
+            else if (date == -Integer.MAX_VALUE)
+                return "-0W";
+            else
+                return DEFAULT_DATE_FORMAT.format(toDate());
+
         }
     }
 
@@ -832,14 +847,15 @@ public class K {
         }
 
         public String toString(boolean showType) {
-            if (isNull())
-                return "0Nt";
-            else if (time == Integer.MAX_VALUE)
-                return "0Wt";
-            else if (time == -Integer.MAX_VALUE)
-                return "-0Wt";
-            else
+            if (isNull()) {
+                return showType ? "0Nt" : "0N";
+            } else if (time == Integer.MAX_VALUE) {
+                return showType ? "0Wt" : "0W";
+            } else if(time ==-Integer.MAX_VALUE){
+                return showType ? "-0Wt" : "-0W";
+            }  else {
                 return sd("HH:mm:ss.SSS", new Time(time));
+            }
         }
 
         public void toString(LimitedWriter w, boolean showType) throws IOException {
@@ -906,13 +922,13 @@ public class K {
         }
 
         public String toString(boolean showType) {
-            if (isNull())
-                return "0Np";
-            else if (time == Long.MAX_VALUE)
-                return "0Wp";
-            else if (time == -Long.MAX_VALUE)
-                return "-0Wp";
-            else {
+            if (isNull()) {
+                return showType ? "0Np" : "0N";
+            } else if (time == Long.MAX_VALUE) {
+                return showType ? "0Wp" : "0W";
+            } else if (time == -Long.MAX_VALUE) {
+                return showType ? "-0Wp" : "-0W";
+            } else {
                 Timestamp ts = toTimestamp();
                 return sd("yyyy.MM.dd HH:mm:ss.", ts) + nsFormatter.format(ts.getNanos());
             }
@@ -1149,13 +1165,13 @@ public class K {
         }
 
         public String toString(boolean showType) {
-            if (isNull())
-                return "0Nn";
-            else if (j == Long.MAX_VALUE)
-                return "0Wn";
-            else if (j == -Long.MAX_VALUE)
-                return "-0Wn";
-            else {
+            if (isNull()) {
+                return showType ? "0Nn" : "0N";
+            } else if (j == Long.MAX_VALUE) {
+                return showType ? "0Wn" : "0W";
+            } else if (j == -Long.MAX_VALUE) {
+                return showType ? "-0Wn" : "-0W";
+            } else {
                 String s = "";
                 long jj = j;
                 if (jj < 0) {
@@ -1707,6 +1723,10 @@ public class K {
                         w.write(" ");
                     w.write(at(i).toString(false));
                 }
+
+                if (showType) {
+                    w.write('p');
+                }
             }
         }
     }
@@ -1735,6 +1755,10 @@ public class K {
                     if (i > 0)
                         w.write(" ");
                     w.write(at(i).toString(false));
+                }
+
+                if (showType) {
+                    w.write('n');
                 }
             }
         }
