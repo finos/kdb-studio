@@ -2188,7 +2188,7 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
                 ++tabAdded;
             }
 
-            if (Config.getInstance().isShowConsoleView()) {
+            if (model == null || Config.getInstance().isShowConsoleView()) {
                 LimitedWriter lm = new LimitedWriter(50000);
                 try {
                     if (!(r instanceof K.UnaryPrimitive && 0 == ((K.UnaryPrimitive) r).getPrimitiveAsInt()))
