@@ -2198,7 +2198,8 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
                 } catch (LimitedWriter.LimitException ex) {
                 }
 
-                JEditorPane pane = new JEditorPane("text/plain", lm.toString());
+                JEditorPane pane = new JEditorPane("text/q", lm.toString());
+                pane.setEditable(false);
                 //not setting a font results in exception e.g. on a string like "\331\203"
                 pane.setFont(Config.getInstance().getFont());
 
