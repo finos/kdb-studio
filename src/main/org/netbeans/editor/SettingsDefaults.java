@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class SettingsDefaults {
 
-    private static final Integer INTEGER_MAX_VALUE = new Integer(Integer.MAX_VALUE);
+    private static final Integer INTEGER_MAX_VALUE = Integer.MAX_VALUE;
 
     // Caret color
     public static final Color defaultCaretColor = Color.black;
@@ -108,37 +108,36 @@ public class SettingsDefaults {
     public static final Coloring defaultStatusBarBoldColoring
     = new Coloring(null, defaultStatusBarBoldForeColor, defaultStatusBarBoldBackColor);
 
-    public static final Integer defaultCaretBlinkRate = new Integer(300);
-    public static final Integer defaultTabSize = new Integer(4);
-    public static final Integer defaultSpacesPerTab = new Integer(4);
-    public static final Integer defaultShiftWidth = new Integer(4); // usually
+    public static final Integer defaultCaretBlinkRate = 300;
+    public static final Integer defaultTabSize = 4;
+    public static final Integer defaultSpacesPerTab = 4;
+    public static final Integer defaultShiftWidth = 4; // usually
     // not used as there's a Evaluator for shift width
 
-    public static final Integer defaultStatusBarCaretDelay = new Integer(200);
+    public static final Integer defaultStatusBarCaretDelay = 200;
 
     public static final Color defaultTextLimitLineColor = new Color(255, 235, 235);
-    public static final Integer defaultTextLimitWidth = new Integer(80);
+    public static final Integer defaultTextLimitWidth = 80;
 
     public static final Acceptor defaultIdentifierAcceptor = AcceptorFactory.LETTER_DIGIT;
     public static final Acceptor defaultWhitespaceAcceptor = AcceptorFactory.WHITESPACE;
 
-    public static final Float defaultLineHeightCorrection = new Float(1.0f);
+    public static final Float defaultLineHeightCorrection = 1.0f;
 
     public static final Insets defaultLineNumberMargin = new Insets(0, 3, 0, 3);
-    public static final Integer defaultTextLeftMarginWidth = new Integer(2);
+    public static final Integer defaultTextLeftMarginWidth = 2;
     public static final Insets defaultScrollJumpInsets = new Insets(-5, -10, -5, -30);
     public static final Insets defaultScrollFindInsets = new Insets(0, -0, -10, -0);
     public static final Dimension defaultComponentSizeIncrement = new Dimension(-5, -30);
 
-    public static final Integer defaultReadBufferSize = new Integer(16384);
-    public static final Integer defaultWriteBufferSize = new Integer(16384);
-    public static final Integer defaultReadMarkDistance = new Integer(180);
-    public static final Integer defaultMarkDistance = new Integer(100);
-    public static final Integer defaultMaxMarkDistance = new Integer(150);
-    public static final Integer defaultMinMarkDistance = new Integer(50);
-    public static final Integer defaultSyntaxUpdateBatchSize
-    = new Integer(defaultMarkDistance.intValue() * 7);
-    public static final Integer defaultLineBatchSize = new Integer(2);
+    public static final Integer defaultReadBufferSize = 16384;
+    public static final Integer defaultWriteBufferSize = 16384;
+    public static final Integer defaultReadMarkDistance = 180;
+    public static final Integer defaultMarkDistance = 100;
+    public static final Integer defaultMaxMarkDistance = 150;
+    public static final Integer defaultMinMarkDistance = 50;
+    public static final Integer defaultSyntaxUpdateBatchSize = defaultMarkDistance * 7;
+    public static final Integer defaultLineBatchSize = 2;
 
     public static final Boolean defaultExpandTabs = Boolean.TRUE;
 
@@ -170,7 +169,7 @@ public class SettingsDefaults {
     public static final Boolean defaultFindMatchCase = Boolean.FALSE;
     public static final Boolean defaultFindWholeWords = Boolean.FALSE;
     public static final Boolean defaultFindRegExp = Boolean.FALSE;
-    public static final Integer defaultFindHistorySize = new Integer(30);
+    public static final Integer defaultFindHistorySize = 30;
     public static final Integer defaultWordMatchSearchLen = INTEGER_MAX_VALUE;
     public static final Boolean defaultWordMatchWrapSearch = Boolean.TRUE;
     public static final Boolean defaultWordMatchMatchOneChar = Boolean.TRUE;
