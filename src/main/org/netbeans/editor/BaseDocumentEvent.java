@@ -508,11 +508,19 @@ public class BaseDocumentEvent extends AbstractDocument.DefaultDocumentEvent {
     }
 
     public int getOffset() {
-        return ((DocumentContent.Edit)lastEdit()).getOffset();
+        if (lastEdit() != null) {
+            return ((DocumentContent.Edit) lastEdit()).getOffset();
+        } else {
+            return super.getOffset();
+        }
     }
 
     public int getLength() {
-        return ((DocumentContent.Edit)lastEdit()).getLength();
+        if (lastEdit() != null) {
+            return ((DocumentContent.Edit) lastEdit()).getLength();
+        } else {
+            return super.getLength();
+        }
     }
 
     /** Edit describing the change of the document draw-layers */
