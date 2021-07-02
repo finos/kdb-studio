@@ -3,6 +3,7 @@ package studio.kdb;
 import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.Array;
+import java.util.Locale;
 import java.util.UUID;
 import org.junit.Test;
 
@@ -104,6 +105,7 @@ public class KTest {
     }
 
     private void check(K.KBase base, String expectedNoType, String expectedWithType) {
+        Locale.setDefault(new Locale("en", "US")); //without this, decimals may be displayed with commas rather than dots
         String actualNoType = base.toString(false);
         String actualWithType = base.toString(true);
         assertEquals("Test to not show type", expectedNoType, actualNoType);
