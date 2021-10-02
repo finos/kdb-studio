@@ -39,12 +39,12 @@ public class QTokenContext extends TokenContext
     public static final int FLOAT_ID       = 16;
     public static final int LONG_ID        = 17;
     public static final int SHORT_ID       = 18;
-    public static final int REAL_ID        = 19;    
-    public static final int BYTE_ID        = 20; 
-    public static final int BOOLEAN_ID     = 21; 
+    public static final int REAL_ID        = 19;
+    public static final int BYTE_ID        = 20;
+    public static final int BOOLEAN_ID     = 21;
     public static final int DATETIME_ID    = 22;
-    public static final int COMMAND_ID     = 23; 
-    public static final int SYSTEM_ID      = 24; 
+    public static final int COMMAND_ID     = 23;
+    public static final int SYSTEM_ID      = 24;
     public static final int TIMESTAMP_ID   = 25;
     public static final int TIMESPAN_ID    = 26;
     //    public static final int TEMPORAL_ID    = 10;
@@ -87,6 +87,6 @@ public class QTokenContext extends TokenContext
 //    public static final BaseImageTokenID EOL= new BaseImageTokenID("EOL", EOL_ID, "\n");
 
 
-    public static final QTokenContext context=new QTokenContext();
-    public static final TokenContextPath contextPath=context.getContextPath();
+    public static final QTokenContext CONTEXT = new QTokenContext();
+    public static final TokenContextPath contextPath = CONTEXT.getContextPath();
 }

@@ -2,8 +2,6 @@ package studio.qeditor;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import studio.qeditor.syntax.QSyntaxParser;
-import studio.qeditor.syntax.QToken;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,6 +9,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
+import studio.qeditor.syntax.QSyntaxParser;
+import studio.qeditor.syntax.QToken;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

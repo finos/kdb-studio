@@ -30,6 +30,14 @@ public class Util {
     public final static ImageIcon NEW_DOCUMENT_ICON = getImage(IMAGE_BASE + "document_new.png");
     public final static ImageIcon FIND_ICON = getImage(IMAGE_BASE + "find.png");
     public final static ImageIcon REPLACE_ICON = getImage(IMAGE_BASE + "replace.png");
+    public final static ImageIcon DISKS_ICON = getImage(IMAGE_BASE + "disks.png");
+    public final static ImageIcon DATA_COPY_ICON = getImage(IMAGE_BASE + "data_copy.png");
+    public final static ImageIcon FOLDER_ICON = getImage(IMAGE_BASE + "folder.png");
+    public final static ImageIcon TEXT_TREE_ICON = getImage(IMAGE_BASE + "text_tree.png");
+    public final static ImageIcon SERVER_INFORMATION_ICON = getImage(IMAGE_BASE + "server_information.png");
+    public final static ImageIcon TABLE_SQL_RUN_ICON = getImage(IMAGE_BASE + "table_sql_run.png");
+    public final static ImageIcon RUN_ICON = getImage(IMAGE_BASE + "element_run.png");
+    public final static ImageIcon TEXT_ICON = getImage(IMAGE_BASE + "text.png");
     public final static ImageIcon OPEN_ICON = getImage(IMAGE_BASE + "open.png");
     public final static ImageIcon SERVER_TREE_ICON = getImage(IMAGE_BASE + "server_tree.png");
     public final static ImageIcon SERVER_EDIT_ICON = getImage(IMAGE_BASE + "server_edit.png");

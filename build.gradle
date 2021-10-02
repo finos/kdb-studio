@@ -32,6 +32,7 @@ dependencies {
     implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.14.0'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-iostreams', version: '2.14.0'
     implementation group: 'org.netbeans.api', name: 'org-openide-awt', version: 'RELEASE113'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.11.2'
     implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.3'
     runtimeOnly files ('lib/images.jar')
 
@@ -43,7 +44,7 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDirs 'src'
+            srcDirs 'src/main'
         }
         resources {
             srcDirs 'src','images'
@@ -57,12 +58,18 @@ sourceSets {
     }
     test {
         java {
-            srcDirs 'test'
+            srcDirs 'src/test'
         }
         resources {
-            srcDirs 'test'
-            include 'syntax.csv'
+            srcDirs 'src/test'
+            include 'src/syntax.csv'
         }
+    }
+
+    intTest {
+        java.srcDirs += ['src/test-integration']
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
     }
 }
 
@@ -83,6 +90,14 @@ task getBuildHash {
     doLast {
         file("src/build.txt").text = buildTime()
     }
+}
+
+task integrationTest(type: Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
 }
 
 task convertNotes (type: JavaExec) {

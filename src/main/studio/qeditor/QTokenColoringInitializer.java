@@ -54,7 +54,7 @@ class QTokenColoringInitializer extends SettingsUtil.TokenColoringInitializer
 
     public QTokenColoringInitializer()
     {
-        super(QTokenContext.context);
+        super(QTokenContext.CONTEXT);
         CHARVECTOR_Coloring=buildColoring("CHARVECTOR", SettingsDefaults.defaultFont,new Color(0,200,20));
         EOL_COMMENT_Coloring=buildColoring("EOLCOMMENT", italicFont, Color.GRAY);
         IDENTIFIER_Coloring=buildColoring("IDENTIFIER", SettingsDefaults.defaultFont,new Color(180,160,0));
