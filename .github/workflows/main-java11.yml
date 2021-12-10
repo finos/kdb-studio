@@ -31,8 +31,6 @@ jobs:
       uses: eskatos/gradle-command-action@v1
       with:
         arguments: check install
-    - name: Integration Test
-      run: ./test.sh
     # Runs a single command using the runners shell
     - name: Show workspace
       run: find
