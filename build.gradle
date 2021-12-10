@@ -8,10 +8,6 @@ apply plugin: 'application'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
-group = "com.github.dzmipt"
-archivesBaseName = "kdbStudio"
-version = "dz2.0"
-
 compileJava {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -119,78 +115,4 @@ task javadocJar(type: Jar) {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-def pubUsername = project.findProperty("ossrhUsername") ?: ""
-def pubPassword = project.findProperty("ossrhPassword") ?: ""
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            pom {
-                name = 'Studio for kdb+'
-                packaging = 'jar'
-                // optionally artifactId can be defined here
-                description = 'Studio for kdb+ is a rapid development environment for the ultra-fast database kdb+ from Kx Systems: http://www.kx.com.'
-                url = 'https://github.com/dzmipt/kdbStudio'
-
-                scm {
-                    connection = 'git@github.com:dzmipt/kdbStudio.git'
-                    developerConnection = 'git@github.com:dzmipt/kdbStudio.git'
-                    url = 'https://github.com/dzmipt/kdbStudio'
-                }
-
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'dzmipt'
-                        name = 'Dmitry Zakharov'
-                        email = 'dz.mipt@gmail.com'
-                    }
-                }
-            }
-        }
-    }
-    repositories {
-        if(project.version.endsWith('-SNAPSHOT')) {
-            maven {
-                url "https://oss.sonatype.org/content/repositories/snapshots/"
-                mavenContent {
-                    snapshotsOnly()
-                }
-                credentials {
-                    username pubUsername
-                    password pubPassword
-                }
-                authentication {
-                    basic(BasicAuthentication)
-                }
-            }
-        } else {
-            maven {
-                url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-                mavenContent {
-                    releasesOnly()
-                }
-                credentials {
-                    username pubUsername
-                    password pubPassword
-                }
-                authentication {
-                    basic(BasicAuthentication)
-                }
-            }
-        }
-    }
-}
-
-signing {
-    sign publishing.publications.mavenJava
 }
