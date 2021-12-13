@@ -74,12 +74,16 @@ public class SearchPanel extends JPanel {
         ActionMap am = txtFind.getActionMap();
         InputMap im = txtFind.getInputMap();
         am.put("findAction", findAction);
+        am.put("closeAction", closeAction);
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,0),"findAction");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,0),"closeAction");
 
         am = txtReplace.getActionMap();
         im = txtReplace.getInputMap();
         am.put("replaceAction", replaceAction);
+        am.put("closeAction", closeAction);
         im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,0),"replaceAction");
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,0),"closeAction");
 
         GroupLayoutSimple layout = new GroupLayoutSimple(this);
         layout.setAutoCreateGaps(false);
@@ -102,6 +106,14 @@ public class SearchPanel extends JPanel {
         txtReplace.setVisible(visible);
         btnReplace.setVisible(visible);
         btnReplaceAll.setVisible(visible);
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        if (visible) {
+            txtFind.requestFocus();
+        }
     }
 
     private SearchContext buildSearchContext() {
@@ -157,8 +169,6 @@ public class SearchPanel extends JPanel {
             status = "Replaced " + result.getCount() + " occurrence(s)";
         }
         editorPane.setTemporaryStatus(status);
-
-        textArea.requestFocusInWindow();
     }
 
     private void find(boolean forward) {
