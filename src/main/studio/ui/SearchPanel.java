@@ -197,5 +197,6 @@ public class SearchPanel extends JPanel {
 
     private void close() {
         editorPane.hideSearchPanel();
+        editorPane.getTextArea().requestFocus();
     }
 }
