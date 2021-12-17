@@ -2,20 +2,25 @@ package studio.ui.chart;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jfree.chart.*;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.StandardChartTheme;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.plot.DatasetRenderingOrder;
-import org.jfree.chart.plot.DefaultDrawingSupplier;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.AbstractRenderer;
-import org.jfree.chart.renderer.xy.*;
+import org.jfree.chart.renderer.xy.StandardXYBarPainter;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.time.*;
-import org.jfree.data.xy.*;
+import org.jfree.data.xy.IntervalXYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import studio.kdb.Config;
 import studio.kdb.K;
 import studio.kdb.KTableModel;
@@ -60,15 +65,18 @@ public class Chart implements ComponentListener {
         rangeKClass.add(K.KLongVector.class);
         rangeKClass.add(K.KBaseVector.class);
 
+        //@TODO: it's better to show temporal types as doubles rather not shown them at all
+        rangeKClass.add(K.KTimespanVector.class);
+        rangeKClass.add(K.KDatetimeVector.class);
+        rangeKClass.add(K.KTimestampVector.class);
+        rangeKClass.add(K.KSecondVector.class);
+        rangeKClass.add(K.KDateVector.class);
+        rangeKClass.add(K.KMonthVector.class);
+        rangeKClass.add(K.KMinuteVector.class);
+        rangeKClass.add(K.KTimeVector.class);
+
+        //@TODO: do we want to keep different collections for range and domain axes.
         domainKClass.addAll(rangeKClass);
-        domainKClass.add(K.KTimespanVector.class);
-        domainKClass.add(K.KDatetimeVector.class);
-        domainKClass.add(K.KTimestampVector.class);
-        domainKClass.add(K.KSecondVector.class);
-        domainKClass.add(K.KDateVector.class);
-        domainKClass.add(K.KMonthVector.class);
-        domainKClass.add(K.KMinuteVector.class);
-        domainKClass.add(K.KTimeVector.class);
     }
 
     private static StandardChartTheme currentTheme = new StandardChartTheme("JFree");
