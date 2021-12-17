@@ -120,7 +120,7 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
     private UserAction wordWrapAction;
     private JFrame frame;
 
-    private static JFileChooser fileChooser;
+    private static Map<String, JFileChooser> fileChooserMap = new HashMap<>();
 
     private static List<StudioPanel> allPanels = new ArrayList<>();
 
@@ -227,26 +227,63 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
         }
     }
 
-    private String chooseFilename() {
+    private static File chooseFile(Component parent, String fileChooserType, int dialogType, String title, File defaultFile, FileFilter... filters) {
+        JFileChooser fileChooser = fileChooserMap.get(fileChooserType);
+        FileChooserConfig config = CONFIG.getFileChooserConfig(fileChooserType);
         if (fileChooser == null) {
             fileChooser = new JFileChooser();
+            fileChooserMap.put(fileChooserType, fileChooser);
+
+            if (title != null) fileChooser.setDialogTitle(title);
+            fileChooser.setDialogType(dialogType);
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            for (FileFilter ff: filters) {
+                fileChooser.addChoosableFileFilter(ff);
+            }
+            if (filters.length == 1) fileChooser.setFileFilter(filters[0]);
 
-            FileFilter ff = new FileNameExtensionFilter("q script", "q");
-            fileChooser.addChoosableFileFilter(ff);
-            fileChooser.setFileFilter(ff);
+            if (defaultFile == null && ! config.getFilename().equals("")) {
+                defaultFile = new File(config.getFilename());
+            }
+
         }
 
-        String filename = editor.getFilename();
-        if (filename != null) {
-            fileChooser.setCurrentDirectory(new File(new File(filename).getPath()));
+        if (defaultFile != null) {
+            fileChooser.setCurrentDirectory(defaultFile.getParentFile());
+            fileChooser.setSelectedFile(defaultFile);
+            fileChooser.ensureFileIsVisible(defaultFile);
         }
 
-        int option = fileChooser.showOpenDialog(this);
-        if (option == JFileChooser.APPROVE_OPTION) {
-            return fileChooser.getSelectedFile().getAbsolutePath();
+        Dimension preferredSize = config.getPreferredSize();
+        if (preferredSize.width > 0 && preferredSize.height > 0) {
+            fileChooser.setPreferredSize(preferredSize);
         }
-        return null;
+
+        int option;
+        if (dialogType == JFileChooser.OPEN_DIALOG) option = fileChooser.showOpenDialog(parent);
+        else option = fileChooser.showSaveDialog(parent);
+
+        File selectedFile = fileChooser.getSelectedFile();
+        String filename = "";
+        if (selectedFile != null) {
+            filename = selectedFile.getAbsolutePath();
+        }
+
+        if (dialogType == JFileChooser.SAVE_DIALOG && option == JFileChooser.APPROVE_OPTION) {
+            FileFilter ff = fileChooser.getFileFilter();
+            if (ff instanceof FileNameExtensionFilter) {
+                String ext = "." + ((FileNameExtensionFilter) ff).getExtensions()[0];
+                if (!filename.endsWith(ext)) {
+                    filename = filename + ext;
+                    selectedFile = new File(filename);
+                }
+            }
+        }
+
+        config = new FileChooserConfig(filename, fileChooser.getSize());
+        CONFIG.setFileChooserConfig(fileChooserType, config);
+
+        return option == JFileChooser.APPROVE_OPTION ? selectedFile : null;
     }
 
     private void exportAsExcel(final String filename) {
@@ -374,143 +411,36 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
     }
 
     private void export() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogType(JFileChooser.SAVE_DIALOG);
-        chooser.setDialogTitle("Export result set as");
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        if (getSelectedTable() == null) return;
 
-        FileFilter csvFilter = null;
-        FileFilter txtFilter = null;
-        FileFilter xmlFilter = null;
-        FileFilter xlsFilter = null;
+        File file = chooseFile(this, Config.EXPORT_FILE_CHOOSER, JFileChooser.SAVE_DIALOG, "Export result set as",
+                null,
+                new FileNameExtensionFilter("csv (Comma delimited)", "csv"),
+                new FileNameExtensionFilter("txt (Tab delimited)", "txt"),
+                new FileNameExtensionFilter("xml", "xml"),
+                new FileNameExtensionFilter("xls (Microsoft Excel)", "xls"));
 
-        if (getSelectedTable() != null) {
-            csvFilter =
-                    new FileFilter() {
-                        public String getDescription() {
-                            return "csv (Comma delimited)";
-                        }
+        if (file == null) return;
 
-                        public boolean accept(File file) {
-                            if (file.isDirectory() || file.getName().endsWith(".csv"))
-                                return true;
-                            else
-                                return false;
-                        }
-                    };
+        try {
+            String filename = file.getAbsolutePath();
 
-            txtFilter =
-                    new FileFilter() {
-                        public String getDescription() {
-                            return "txt (Tab delimited)";
-                        }
-
-                        public boolean accept(File file) {
-                            if (file.isDirectory() || file.getName().endsWith(".txt"))
-                                return true;
-                            else
-                                return false;
-                        }
-                    };
-
-            xmlFilter =
-                    new FileFilter() {
-                        public String getDescription() {
-                            return "xml";
-                        }
-
-                        public boolean accept(File file) {
-                            if (file.isDirectory() || file.getName().endsWith(".xml"))
-                                return true;
-                            else
-                                return false;
-                        }
-                    };
-
-
-            xlsFilter =
-                    new FileFilter() {
-                        public String getDescription() {
-                            return "xls (Microsoft Excel)";
-                        }
-
-                        public boolean accept(File file) {
-                            if (file.isDirectory() || file.getName().endsWith(".xls"))
-                                return true;
-                            else
-                                return false;
-                        }
-                    };
-
-            chooser.addChoosableFileFilter(csvFilter);
-            chooser.addChoosableFileFilter(txtFilter);
-            chooser.addChoosableFileFilter(xmlFilter);
-            chooser.addChoosableFileFilter(xlsFilter);
-        }
-
-        if (exportFilename != null) {
-            File file = new File(exportFilename);
-            File dir = new File(file.getPath());
-            chooser.setCurrentDirectory(dir);
-            chooser.ensureFileIsVisible(file);
-            if (getSelectedTable() != null)
-                if (exportFilename.endsWith(".xls"))
-                    chooser.setFileFilter(xlsFilter);
-                else if (exportFilename.endsWith(".csv"))
-                    chooser.setFileFilter(csvFilter);
-                else if (exportFilename.endsWith(".xml"))
-                    chooser.setFileFilter(xmlFilter);
-                else if (exportFilename.endsWith(".txt"))
-                    chooser.setFileFilter(txtFilter);
-        }
-
-        int option = chooser.showSaveDialog(this);
-
-        if (option == JFileChooser.APPROVE_OPTION) {
-            File sf = chooser.getSelectedFile();
-            File f = chooser.getCurrentDirectory();
-            String dir = f.getAbsolutePath();
-
-//            Cursor cursor= frame.getCursor();
-
-            try {
-                //              frame.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
-                FileFilter ff = chooser.getFileFilter();
-
-                exportFilename = dir + "/" + sf.getName();
-
-                if (getSelectedTable() != null)
-                    if (exportFilename.endsWith(".xls"))
-                        exportAsExcel(exportFilename);
-                    else if (exportFilename.endsWith(".csv"))
-                        exportAsCSV(exportFilename);
-                    else if (exportFilename.endsWith(".txt"))
-                        exportAsTxt(exportFilename);
-                    else if (exportFilename.endsWith(".xml"))
-                        exportAsXml(getSelectedTable().getModel(),exportFilename);
-                    /*                    else if (exportFilename.endsWith(".res")) {
-                    exportAsBin(exportFilename);
-                    }
-                     */
-                    else
-                    if (ff == csvFilter)
-                        exportAsCSV(exportFilename);
-                    else if (ff == xlsFilter)
-                        exportAsExcel(exportFilename);
-                    else if (ff == txtFilter)
-                        exportAsTxt(exportFilename);
-                    else if (ff == xmlFilter)
-                        exportAsXml(getSelectedTable().getModel(),exportFilename);
-                    else
-                        StudioOptionPane.showWarning(frame,
-                                "You did not specify what format to export the file as.\n Cancelling data export",
-                                "Warning");
-            }
-            catch (Exception e) {
-                StudioOptionPane.showError(frame,
-                        "Error",
-                        "An error occurred whilst writing the export file.\n Details are: " + e.getMessage());
-            }
+            if (filename.endsWith(".xls"))
+                exportAsExcel(filename);
+            else if (filename.endsWith(".csv"))
+                exportAsCSV(filename);
+            else if (filename.endsWith(".txt"))
+                exportAsTxt(filename);
+            else if (filename.endsWith(".xml"))
+                exportAsXml(getSelectedTable().getModel(),filename);
+            else
+                StudioOptionPane.showWarning(this,
+                        "You did not specify what format to export the file as.\n Cancelling data export",
+                        "Warning");
+        } catch (Exception e) {
+            StudioOptionPane.showError(this,
+                    "Error",
+                    "An error occurred whilst writing the export file.\n Details are: " + e.getMessage());
         }
     }
 
@@ -522,8 +452,11 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
     }
 
     private void openFile() {
-        String filename = chooseFilename();
-        if (filename == null) return;
+        File file = chooseFile(this, Config.OPEN_FILE_CHOOSER, JFileChooser.OPEN_DIALOG, null, null,
+                new FileNameExtensionFilter("q script", "q"));
+
+        if (file == null) return;
+        String filename = file.getAbsolutePath();
         addToMruFiles(filename);
         addTab(editor.getServer(), filename);
     }
@@ -573,50 +506,16 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
     }
 
     private boolean saveAsFile(EditorTab editor) {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogType(JFileChooser.SAVE_DIALOG);
-        chooser.setDialogTitle("Save script as");
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-
-        FileFilter ff =
-                new FileFilter() {
-                    public String getDescription() {
-                        return "q script";
-                    }
-
-                    public boolean accept(File file) {
-                        if (file.isDirectory() || file.getName().endsWith(".q"))
-                            return true;
-                        else
-                            return false;
-                    }
-                };
-
-        chooser.addChoosableFileFilter(ff);
-
-        chooser.setFileFilter(ff);
-
         String filename = editor.getFilename();
-        if (filename != null) {
-            File file = new File(filename);
-            File dir = new File(file.getPath());
-            chooser.setCurrentDirectory(dir);
-            chooser.setSelectedFile(file);
-        }
+        File file = chooseFile(editor.getPanel(), Config.SAVE_FILE_CHOOSER, JFileChooser.SAVE_DIALOG, "Save script as",
+                filename == null ? null : new File(filename),
+                new FileNameExtensionFilter("q script", "q"));
 
-        int option = chooser.showSaveDialog(this);
-        if (option != JFileChooser.APPROVE_OPTION) return false;
-        File sf = chooser.getSelectedFile();
-        filename = sf.getAbsolutePath();
+        if (file == null) return false;
 
-        if (chooser.getFileFilter() == ff) {
-            if (! sf.getName().endsWith(".q")) {
-                filename = filename + ".q";
-            }
-        }
-
-        if (new File(filename).exists()) {
-            int choice = StudioOptionPane.showYesNoDialog(frame,
+        filename = file.getAbsolutePath();
+        if (file.exists()) {
+            int choice = StudioOptionPane.showYesNoDialog(editor.getPanel(),
                     filename + " already exists.\nOverwrite?",
                     "Overwrite?");
 

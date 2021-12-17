@@ -12,13 +12,13 @@ import studio.utils.QConnection;
 import studio.utils.TableConnExtractor;
 
 import javax.swing.tree.TreeNode;
+import java.awt.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-import java.awt.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 public class Config {
     private static final Logger log = LogManager.getLogger();
 
-    private enum ConfigType { STRING, INT, DOUBLE, BOOLEAN, FONT, BOUNDS, COLOR, ENUM}
+    private enum ConfigType { STRING, INT, DOUBLE, BOOLEAN, FONT, BOUNDS, COLOR, ENUM, SIZE, FILE_CHOOSER}
 
     private static final Map<String,? super Object> defaultValues = new HashMap();
     private static final Map<String, ConfigType> configTypes = new HashMap();
@@ -81,6 +81,10 @@ public class Config {
 
     public static final String MAX_FRACTION_DIGITS = configDefault("maxFractionDigits", ConfigType.INT, 7);
     public static final String EMULATED_DOUBLE_CLICK_TIMEOUT = configDefault("emulatedDoubleClickTimeout", ConfigType.INT, 500);
+
+    public static final String OPEN_FILE_CHOOSER = configDefault("openFileChooser", ConfigType.FILE_CHOOSER, new FileChooserConfig());
+    public static final String SAVE_FILE_CHOOSER = configDefault("saveFileChooser", ConfigType.FILE_CHOOSER, new FileChooserConfig());
+    public static final String EXPORT_FILE_CHOOSER = configDefault("exportFileChooser", ConfigType.FILE_CHOOSER, new FileChooserConfig());
 
     private enum FontStyle {
         Plain(Font.PLAIN), Bold(Font.BOLD), Italic(Font.ITALIC), ItalicAndBold(Font.BOLD|Font.ITALIC);
@@ -779,7 +783,34 @@ public class Config {
     private static String configDefault(String key, ConfigType type, Object defaultValue) {
         defaultValues.put(key, defaultValue);
         configTypes.put(key, type);
+
+        //Looks like a hack? How to make it more elegant?
+        if (type == ConfigType.FILE_CHOOSER) {
+            FileChooserConfig config = (FileChooserConfig) defaultValue;
+            configDefault(key + ".filename", ConfigType.STRING, config.getFilename());
+            configDefault(key + ".prefSize", ConfigType.SIZE, config.getPreferredSize());
+        }
+
         return key;
+    }
+
+    private String get(String key, String defaultValue) {
+        String value = p.getProperty(key);
+        return value == null ? defaultValue : value;
+    }
+
+    public String getString(String key) {
+        return get(key, (String) checkAndGetDefaultValue(key, ConfigType.STRING));
+    }
+
+    // Returns whether the value was changed
+    public boolean setString(String key, String value) {
+        String currentValue = getString(key);
+        if (currentValue.equals(value)) return false;
+
+        p.setProperty(key, value);
+        save();
+        return true;
     }
 
     private boolean get(String key, boolean defaultValue) {
@@ -925,7 +956,60 @@ public class Config {
         p.setProperty(key + ".height", "" + bound.height);
         save();
     }
-    
+
+    private Dimension get(String key, Dimension defaultValue) {
+        try {
+            String strWidth = p.getProperty(key + ".width");
+            String strHeight = p.getProperty(key + ".height");
+
+            if (strWidth != null && strHeight != null) {
+                return new Dimension(Integer.parseInt(strWidth), Integer.parseInt(strHeight));
+            }
+
+        } catch (NumberFormatException e) {
+            log.error("Failed to parse dimension from config key " + key, e);
+        }
+        return defaultValue;
+    }
+
+    public Dimension getSize(String key) {
+        return get(key, (Dimension) checkAndGetDefaultValue(key, ConfigType.SIZE));
+    }
+    public boolean setSize(String key, Dimension value) {
+        Dimension currentValue = getSize(key);
+        if (currentValue.equals(value)) return false;
+
+        p.setProperty(key + ".width", "" + value.width);
+        p.setProperty(key + ".height", "" + value.height);
+        save();
+        return true;
+    }
+
+    private FileChooserConfig get(String key, FileChooserConfig defaultValue) {
+        String filename = get(key + ".filename", (String) null);
+        Dimension size = get(key + ".prefSize", (Dimension) null);
+
+        if (size != null && filename != null) {
+            return new FileChooserConfig(filename, size);
+        }
+
+        return defaultValue;
+    }
+
+    public FileChooserConfig getFileChooserConfig(String key) {
+        return get(key, (FileChooserConfig) checkAndGetDefaultValue(key, ConfigType.FILE_CHOOSER));
+    }
+
+    public boolean setFileChooserConfig(String key, FileChooserConfig value) {
+        FileChooserConfig currentValue = getFileChooserConfig(key);
+        if (currentValue.equals(value)) return false;
+
+        setString(key + ".filename", value.getFilename());
+        setSize(key + ".prefSize", value.getPreferredSize());
+        save();
+        return true;
+    }
+
     private Color get(String key, Color defaultValue) {
         String value = p.getProperty(key);
         if (value == null) return defaultValue;
@@ -945,7 +1029,7 @@ public class Config {
     // Returns whether the value was changed
     public boolean setColor(String key, Color value) {
         Color currentValue = getColor(key);
-        if (currentValue == value) {
+        if (currentValue.equals(value)) {
             return false;
         }
         p.setProperty(key, Integer.toHexString(value.getRGB()).substring(2));
