@@ -1240,7 +1240,7 @@ public class K {
         }
         public Date toDate() {
             Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.HOUR, value / 60);
+            cal.set(Calendar.HOUR_OF_DAY, value / 60);
             cal.set(Calendar.MINUTE, value % 60);
             return cal.getTime();
         }
@@ -1273,7 +1273,7 @@ public class K {
 
         public Date toDate() {
             Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.HOUR, value / (60 * 60));
+            cal.set(Calendar.HOUR_OF_DAY, value / (60 * 60));
             cal.set(Calendar.MINUTE,  (value % (60 * 60)) / 60);
             cal.set(Calendar.SECOND, value % 60);
             return cal.getTime();

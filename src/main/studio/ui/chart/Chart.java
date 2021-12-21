@@ -29,13 +29,13 @@ import studio.ui.StudioOptionPane;
 import studio.ui.Util;
 import studio.utils.WindowsAppUserMode;
 
+import javax.swing.Timer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.*;
 
 
 public class Chart implements ComponentListener {
@@ -55,28 +55,43 @@ public class Chart implements ComponentListener {
 
     private List<Integer> yIndex;
 
-    private final static HashSet<Class> domainKClass = new HashSet<>();
-    private final static HashSet<Class> rangeKClass = new HashSet<>();
+    private interface KBase2RegularTimePeriod {
+        RegularTimePeriod convert(K.KBase value);
+    }
+
+    private final static Set<Class> domainKClass = new HashSet<>();
+    private final static Set<Class> rangeKClass = new HashSet<>();
+    private final static Map<Class, KBase2RegularTimePeriod> regularTimePeriodConverters = new HashMap<>();
+
     static {
-        rangeKClass.add(K.KIntVector.class);
-        rangeKClass.add(K.KDoubleVector.class);
-        rangeKClass.add(K.KFloatVector.class);
-        rangeKClass.add(K.KShortVector.class);
-        rangeKClass.add(K.KLongVector.class);
-        rangeKClass.add(K.KBaseVector.class);
+        List<Class> classes = Arrays.asList(
+            K.KIntVector.class,
+            K.KDoubleVector.class,
+            K.KFloatVector.class,
+            K.KShortVector.class,
+            K.KLongVector.class,
 
-        //@TODO: it's better to show temporal types as doubles rather not shown them at all
-        rangeKClass.add(K.KTimespanVector.class);
-        rangeKClass.add(K.KDatetimeVector.class);
-        rangeKClass.add(K.KTimestampVector.class);
-        rangeKClass.add(K.KSecondVector.class);
-        rangeKClass.add(K.KDateVector.class);
-        rangeKClass.add(K.KMonthVector.class);
-        rangeKClass.add(K.KMinuteVector.class);
-        rangeKClass.add(K.KTimeVector.class);
+            //@TODO: it's better to show temporal types as doubles rather not shown them at all
+            K.KDateVector.class,
+            K.KTimeVector.class,
+            K.KTimestampVector.class,
+            K.KTimespanVector.class,
+            K.KDatetimeVector.class,
+            K.KMonthVector.class,
+            K.KSecondVector.class,
+            K.KMinuteVector.class);
 
-        //@TODO: do we want to keep different collections for range and domain axes.
-        domainKClass.addAll(rangeKClass);
+        rangeKClass.addAll(classes);
+        domainKClass.addAll(classes);
+
+        regularTimePeriodConverters.put(K.KDateVector.class, v -> new Day(((K.KDate)v).toDate()));
+        regularTimePeriodConverters.put(K.KTimeVector.class, v -> new Millisecond(((K.KTime)v).toTime()));
+        regularTimePeriodConverters.put(K.KTimestampVector.class, v -> new Millisecond(((K.KTimestamp)v).toTimestamp()));
+        regularTimePeriodConverters.put(K.KTimespanVector.class, v -> new Millisecond(((K.KTimespan)v).toTime()));
+        regularTimePeriodConverters.put(K.KDatetimeVector.class, v -> new Millisecond(((K.KDatetime)v).toTimestamp()));
+        regularTimePeriodConverters.put(K.KMonthVector.class, v -> new Month(((K.Month)v).toDate()));
+        regularTimePeriodConverters.put(K.KSecondVector.class, v -> new Second(((K.Second)v).toDate()));
+        regularTimePeriodConverters.put(K.KMinuteVector.class, v -> new Minute(((K.Minute)v).toDate()));
     }
 
     private static StandardChartTheme currentTheme = new StandardChartTheme("JFree");
@@ -264,9 +279,8 @@ public class Chart implements ComponentListener {
         int xIndex = pnlConfig.getDomainIndex();
 
         Class xClazz = table.getColumnClass(xIndex);
-
-        boolean xySeries = rangeKClass.contains(xClazz);
-        if (xySeries) {
+        KBase2RegularTimePeriod converter = regularTimePeriodConverters.get(xClazz);
+        if (converter == null) {
             XYSeriesCollection collection = new XYSeriesCollection();
             collection.setAutoWidth(true);
             XYSeries series = new XYSeries(table.getColumnName(col));
@@ -288,43 +302,7 @@ public class Chart implements ComponentListener {
                 K.KBase xValue = (K.KBase) table.getValueAt(row, xIndex);
                 if (xValue.isNull()) continue;
 
-                RegularTimePeriod period = null;
-                //@TODO: need to extrace this logic into K.KBase to avoid such sort of switch
-                if (xValue instanceof K.KDate) {
-                    K.KDate date = (K.KDate) xValue;
-                    period = new Day(date.toDate());
-                } else if (xValue instanceof K.KTime) {
-                    K.KTime time = (K.KTime) xValue;
-                    period = new Millisecond(time.toTime());
-                } else if (xValue instanceof K.KTimestamp) {
-                    K.KTimestamp timestamp = (K.KTimestamp) xValue;
-                    period = new Millisecond(timestamp.toTimestamp());
-                } else if (xValue instanceof K.KTimespan) {
-                    K.KTimespan timespan = (K.KTimespan) xValue;
-                    period = new Millisecond(timespan.toTime());
-                } else if (xValue instanceof K.KDatetime) {
-                    K.KDatetime datetime = (K.KDatetime) xValue;
-                    period = new Millisecond(datetime.toTimestamp());
-                } else if (xValue instanceof K.Month) {
-                    K.Month month = (K.Month) xValue;
-                    int m = month.toInt() + 24000;
-                    int y = m / 12;
-                    m = 1 + m % 12;
-                    period = new Month(m, y);
-                } else if (xValue instanceof K.Second) {
-                    K.Second second = (K.Second) xValue;
-                    int value = second.toInt();
-                    int s = value % 60;
-                    int m = value / 60 % 60;
-                    int h = value / 3600;
-                    period = new Second(s, m, h, 1, 1, 2001);
-                } else if (xValue instanceof K.Minute) {
-                    K.Minute minute = (K.Minute) xValue;
-                    period = new Minute(minute.toInt() % 60, minute.toInt() / 60, 1, 1, 2001);
-                } else {
-                    throw new IllegalStateException("Unexpected class: " + xValue.getClass());
-                }
-
+                RegularTimePeriod period = converter.convert(xValue);
                 K.KBase value = (K.KBase) table.getValueAt(row, col);
                 if (value.isNull()) continue;
 
