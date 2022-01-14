@@ -1,9 +1,10 @@
 package studio.kdb;
 
 public class ListModel extends KTableModel {
-    private K.KBaseVector list;
+    private final K.KBaseVector<? extends K.KBase> list;
 
-    public ListModel(K.KBaseVector list) {
+    public ListModel(K.KBaseVector<? extends K.KBase> list) {
+        super(list.count());
         this.list = list;
     }
 
@@ -13,7 +14,7 @@ public class ListModel extends KTableModel {
     }
 
     @Override
-    public K.KBaseVector getColumn(int col) {
+    public K.KBaseVector<? extends K.KBase> getColumn(int col) {
         return list;
     }
 

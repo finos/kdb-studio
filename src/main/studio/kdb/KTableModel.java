@@ -5,10 +5,8 @@ import javax.swing.table.AbstractTableModel;
 public abstract class KTableModel extends AbstractTableModel {
 
     public abstract boolean isKey(int column);
-
-    public abstract K.KBaseVector getColumn(int col);
-
-    public abstract String getColumnName(int col);
+    public abstract K.KBaseVector<? extends K.KBase> getColumn(int col);
+    public abstract String getColumnName(int col) ;
 
     public static KTableModel getModel(K.KBase obj) {
         if (obj instanceof K.Flip) {
@@ -16,68 +14,85 @@ public abstract class KTableModel extends AbstractTableModel {
         }
 
         if (obj instanceof K.Dict) {
-            K.Dict d = (K.Dict) obj;
-
-            if ((d.x instanceof K.Flip) && (d.y instanceof K.Flip)) {
-                return new DictTableModel(d);
-            }
-
-            if ((d.x instanceof K.KBaseVector) && (d.y instanceof K.KBaseVector)) {
-                return new DictModel(d);
+            K.Dict dict = (K.Dict) obj;
+            if ( (dict.x instanceof K.KBaseVector || dict.x instanceof K.Flip) &&
+                 (dict.y instanceof K.KBaseVector || dict.y instanceof K.Flip) ) {
+                return new DictTableModel(dict);
+            } else {
+                return null;
             }
         }
 
-        if ((obj instanceof K.KBaseVector) && obj.type != 10) {
-            return new ListModel((K.KBaseVector) obj);
+        if ((obj instanceof K.KBaseVector) && obj.getType() != 10 && obj.getType() != 4) {
+            return new ListModel((K.KBaseVector<? extends K.KBase>)obj);
         }
         return null;
     }
 
-    protected int[] sortIndex = null;
-    protected int sorted = 0;
-    protected int sortedByColumn = -1;
+    protected int[] index;
+    protected boolean ascSorted;
+    protected int sortedByColumn;
 
-    public void asc(int col) {
-        sortIndex = null;
-        K.KBaseVector v = getColumn(col);
-        sortIndex = v.gradeUp();
-        sorted = 1;
-        sortedByColumn = col;
+    protected KTableModel(int rowCount) {
+        index = new int[rowCount];
+        ascSorted = true;
+        initIndex();
     }
 
-    public void desc(int col) {
-        sortIndex = null;
-        K.KBaseVector v = getColumn(col);
-        sortIndex = v.gradeDown();
-        sorted = -1;
-        sortedByColumn = col;
-    }
-
-    public int getSortByColumn() {
-        return sortedByColumn;
-    }
-
-    public boolean isSortedAsc() {
-        return sorted == 1;
-    }
-
-    public boolean isSortedDesc() {
-        return sorted == -1;
-    }
-
-    public void removeSort() {
-        sortIndex = null;
-        sorted = 0;
+    private void initIndex() {
+        int k = ascSorted ? 1 : -1;
+        int b = ascSorted ? 0 : index.length - 1;
+        for (int i = 0; i< index.length; i++) {
+            index[i] = b + k*i;
+        }
         sortedByColumn = -1;
+    }
+
+    public int[] getIndex() {
+        return index;
+    }
+
+    public void sort(int col) {
+        if (sortedByColumn == col) {
+            if (ascSorted) {
+                ascSorted = false;
+            } else {
+                ascSorted = true;
+                col = -1;
+            }
+        } else {
+            ascSorted = true;
+        }
+        if (col == -1) {
+            initIndex();
+        } else {
+            K.KBaseVector<? extends K.KBase> array = getColumn(col);
+            if (sortedByColumn == col) {
+                index = Sorter.reverse(array, index);
+            } else {
+                index = Sorter.sort(array, index);
+            }
+        }
+        sortedByColumn = col;
+
+        fireTableDataChanged();
+    }
+
+    public boolean isSortedAsc(int column) {
+        return ascSorted && sortedByColumn == column;
+    }
+
+    public boolean isSortedDesc(int column) {
+        return !ascSorted && sortedByColumn == column;
     }
 
     public Class getColumnClass(int col) {
         return getColumn(col).getClass();
     }
-
-    public Object getValueAt(int row, int col) {
-        row = (sortIndex == null) ? row : sortIndex[row];
-        K.KBaseVector v = getColumn(col);
+    //@TODO: add separate method which return K.KBase
+    public Object getValueAt(int row,int col) {
+        row = index[row];
+        K.KBaseVector<? extends K.KBase> v = getColumn(col);
         return v.at(row);
     }
 

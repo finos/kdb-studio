@@ -1,173 +1,103 @@
 package studio.ui;
 
+import java.awt.*;
+import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.*;
+import java.util.*;
+import java.util.List;
+import javax.swing.*;
 import static javax.swing.JSplitPane.VERTICAL_SPLIT;
 import static studio.ui.EscapeDialog.DialogResult.ACCEPTED;
 import static studio.ui.EscapeDialog.DialogResult.CANCELLED;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Event;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EventListener;
-import java.util.EventObject;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.ResourceBundle;
-import java.util.Vector;
-import java.util.stream.Stream;
-import javax.swing.Action;
-import javax.swing.BoxLayout;
-import javax.swing.Icon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JEditorPane;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.JTextPane;
-import javax.swing.JToolBar;
-import javax.swing.KeyStroke;
-import javax.swing.ProgressMonitor;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.WindowConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.UndoableEditEvent;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileView;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.table.TableModel;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultEditorKit;
-import javax.swing.text.Document;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
-import javax.swing.undo.UndoManager;
+import javax.swing.text.*;
+
 import kx.c;
-import org.netbeans.editor.ActionFactory;
-import org.netbeans.editor.BaseDocument;
-import org.netbeans.editor.BaseKit;
-import org.netbeans.editor.BaseSettingsInitializer;
-import org.netbeans.editor.BaseTextUI;
-import org.netbeans.editor.Coloring;
-import org.netbeans.editor.LocaleSupport;
-import org.netbeans.editor.Settings;
-import org.netbeans.editor.Utilities;
-import org.netbeans.editor.ext.ExtKit;
-import org.netbeans.editor.ext.ExtSettingsInitializer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextAreaEditorKit;
+import studio.core.AuthenticationManager;
 import studio.core.Credentials;
-import studio.kdb.Config;
-import studio.kdb.ConnectionPool;
-import studio.kdb.DictModel;
-import studio.kdb.K;
-import studio.kdb.KTableModel;
-import studio.kdb.LimitedWriter;
-import studio.kdb.ListModel;
-import studio.kdb.Lm;
-import studio.kdb.QErrors;
-import studio.kdb.ReloadQKeywords;
-import studio.kdb.Server;
-import studio.qeditor.QKit;
-import studio.qeditor.QSettingsInitializer;
-import studio.utils.BrowserLaunch;
-import studio.utils.OSXAdapter;
-import studio.utils.SwingWorker;
+import studio.kdb.*;
+import studio.ui.action.QPadImport;
+import studio.ui.action.QueryResult;
+import studio.ui.action.WorkspaceSaver;
+import studio.ui.chart.Chart;
+import studio.ui.dndtabbedpane.DragEvent;
+import studio.ui.dndtabbedpane.DraggableTabbedPane;
+import studio.ui.rstextarea.FindReplaceAction;
+import studio.ui.rstextarea.RSTextAreaFactory;
+import studio.utils.*;
 
-public class StudioPanel extends JPanel implements Observer, WindowListener {
+public class StudioPanel extends JPanel implements Observer,WindowListener {
+
+    private static final Logger log = LogManager.getLogger();
+    private static final Action editorUndoAction;
+    private static final Action editorRedoAction;
+    private static final Action editorCutAction;
+    private static final Action editorCopyAction;
+    private static final Action editorPasteAction;
+    private static final Action editorSelectAllAction;
+    private static final Action editorFindAction;
+    private static final Action editorReplaceAction;
+
     static {
-        // Register us
-        LocaleSupport.addLocalizer(new Impl("org.netbeans.editor.Bundle"));
-
-        Settings.addInitializer(new BaseSettingsInitializer(), Settings.CORE_LEVEL);
-        Settings.addInitializer(new ExtSettingsInitializer(), Settings.CORE_LEVEL);
-
-        QKit editorKit = new QKit();
-        JEditorPane.registerEditorKitForContentType(editorKit.getContentType(),
-            editorKit.getClass().getName());
-        Settings.addInitializer(new QSettingsInitializer());
-        Settings.reset();
+        // Action name will be used for text in menu items. Kit's actions have internal names.
+        // We will create new actions for menu/toolbar and use kit's actions as action itself.
+        editorCopyAction = RSTextAreaFactory.getAction(RSTextAreaFactory.rstaCopyAsStyledTextAction);
+        editorCutAction = RSTextAreaFactory.getAction(RSTextAreaFactory.rstaCutAsStyledTextAction);
+        editorPasteAction = RSTextAreaFactory.getAction(RSyntaxTextAreaEditorKit.pasteAction);
+        editorSelectAllAction = RSTextAreaFactory.getAction(RSyntaxTextAreaEditorKit.selectAllAction);
+        editorUndoAction = RSTextAreaFactory.getAction(RSyntaxTextAreaEditorKit.rtaUndoAction);
+        editorRedoAction = RSTextAreaFactory.getAction(RSyntaxTextAreaEditorKit.rtaRedoAction);
+        editorFindAction = RSTextAreaFactory.getAction(FindReplaceAction.findAction);
+        editorReplaceAction = RSTextAreaFactory.getAction(FindReplaceAction.replaceAction);
     }
+
+
+    private static boolean loading = false;
 
     private JComboBox<String> comboServer;
     private JTextField txtServer;
-    private JTable table;
     private String exportFilename;
     private String lastQuery = null;
-    private JMenuBar menubar;
     private JToolBar toolbar;
-    private JEditorPane textArea;
-    private final JSplitPane splitpane;
-    private final JTabbedPane tabbedPane;
+    private DraggableTabbedPane tabbedEditors;
+    private EditorTab editor;
+    private JSplitPane splitpane;
+    private DraggableTabbedPane tabbedPane;
     private ServerList serverList;
     private UserAction arrangeAllAction;
     private UserAction closeFileAction;
-    private UserAction newFileAction;
+    private UserAction closeTabAction;
+    private UserAction cleanAction;
     private UserAction openFileAction;
     private UserAction openInExcel;
     private UserAction codeKxComAction;
     private UserAction serverListAction;
-    private UserAction openFileInNewWindowAction;
+    private UserAction serverHistoryAction;
+    private UserAction newWindowAction;
+    private UserAction newTabAction;
     private UserAction saveFileAction;
+    private UserAction saveAllFilesAction;
     private UserAction saveAsFileAction;
     private UserAction exportAction;
     private UserAction chartAction;
-    private ActionFactory.UndoAction undoAction;
-    private ActionFactory.RedoAction redoAction;
-    private BaseKit.CutAction cutAction;
-    private BaseKit.CopyAction copyAction;
-    private BaseKit.PasteAction pasteAction;
-    private BaseKit.SelectAllAction selectAllAction;
+    private Action undoAction;
+    private Action redoAction;
+    private Action cutAction;
+    private Action copyAction;
+    private Action pasteAction;
+    private Action selectAllAction;
     private Action findAction;
     private Action replaceAction;
     private UserAction stopAction;
@@ -179,462 +109,268 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
     private UserAction settingsAction;
     private UserAction toggleDividerOrientationAction;
     private UserAction minMaxDividerAction;
+    private UserAction importFromQPadAction;
     private UserAction editServerAction;
     private UserAction addServerAction;
     private UserAction removeServerAction;
-    private static int scriptNumber = 0;
-    private static int myScriptNumber;
-    private final JFrame frame;
-    public static java.util.List windowList = Collections.synchronizedList(new LinkedList());
-    private final int menuShortcutKeyMask =
-        java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+    private UserAction toggleCommaFormatAction;
+    private UserAction nextEditorTabAction;
+    private UserAction prevEditorTabAction;
+    private UserAction[] lineEndingActions;
+    private UserAction wordWrapAction;
+    private JFrame frame;
 
-    private static final int MAX_SERVERS_TO_CLONE = 20;
+    private static JFileChooser fileChooser;
 
-    public void refreshFrameTitle() {
-        String s = (String) textArea.getDocument().getProperty("filename");
-        if (s == null) {
-            s = "Script" + myScriptNumber;
-        }
-        String title = s.replace('\\', '/');
-        frame.setTitle(title + (getModified() ? " (not saved) " : "") +
-            (server != null ? " @" + server : "") + " Studio for kdb+ " +
-            Lm.getVersionString());
-    }
+    private static List<StudioPanel> allPanels = new ArrayList<>();
 
-    public static class WindowListChangedEvent extends EventObject {
-        public WindowListChangedEvent(Object source) {
-            super(source);
-        }
-    }
+    private final List<Server> serverHistory;
 
-    public interface WindowListChangedEventListener extends EventListener {
-        void windowListChangedEventOccurred(WindowListChangedEvent evt);
-    }
+    public final static int menuShortcutKeyMask = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+    private final static Cursor textCursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR);
+    private final static Cursor waitCursor = Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR);
 
-    public static class WindowListMonitor {
-        protected javax.swing.event.EventListenerList listenerList =
-            new javax.swing.event.EventListenerList();
+    private final static int MAX_SERVERS_TO_CLONE = 20;
 
-        public synchronized void addEventListener(WindowListChangedEventListener listener) {
-            listenerList.add(WindowListChangedEventListener.class, listener);
+    private static final Config CONFIG = Config.getInstance();
+    
+    public void refreshTitle() {
+        if (editor.getTitle() == null) return;
+
+        int count = tabbedEditors.getTabCount();
+        for (int index=0; index<count; index++) {
+            String oldTitle = tabbedEditors.getTitleAt(index);
+            String title = getEditor(index).getTabTitle();
+            if (oldTitle!= null && oldTitle.equals(title)) continue;
+            tabbedEditors.setTitleAt(index, title);
         }
 
-        public synchronized void removeEventListener(WindowListChangedEventListener listener) {
-            listenerList.remove(WindowListChangedEventListener.class, listener);
-        }
-
-        synchronized void fireMyEvent(WindowListChangedEvent evt) {
-            Object[] listeners = listenerList.getListenerList();
-            for (int i = 0; i < listeners.length; i += 2) {
-                if (listeners[i] == WindowListChangedEventListener.class) {
-                    ((WindowListChangedEventListener) listeners[i + 1])
-                        .windowListChangedEventOccurred(evt);
-                }
+        if (! loading) {
+            Server server = editor.getServer();
+            String env = Config.getEnvironment();
+            String frameTitle = editor.getTitle() + (editor.isModified() ? " (not saved) " : "") + (server != null ? " @" + server.toString() : "") + " Studio for kdb+ " + Lm.version + (env == null ? "" : " [" + env + "]");
+            if (!frameTitle.equals(frame.getTitle())) {
+                frame.setTitle(frameTitle);
             }
         }
     }
 
-    public static WindowListMonitor windowListMonitor = new WindowListMonitor();
-
-    private void updateUndoRedoState(UndoManager um) {
-        undoAction.setEnabled(um.canUndo());
-        redoAction.setEnabled(um.canRedo());
+    //@TODO: Should we have a generic code which override or remove all our actions from the netbeans JEditorPane
+    private void overrideDefaultKeymap(JComponent component, UserAction... actions) {
+        for (UserAction action: actions) {
+            component.getInputMap().put(action.getKeyStroke(), action.getText());
+            component.getActionMap().put(action.getText(), action);
+        }
     }
 
-    private void initDocument() {
-        initActions();
-        refreshActionState();
+    private void removeFocusChangeKeysForWindows(JComponent component) {
+        if (Util.MAC_OS_X) return;
 
-        Document doc;
-        if (textArea == null) {
-            textArea = new JEditorPane("text/q", "");
-            textArea.setName("qEditor");
-            Action[] actions = textArea.getActions();
+        KeyStroke ctrlTab = KeyStroke.getKeyStroke("ctrl TAB");
+        KeyStroke ctrlShiftTab = KeyStroke.getKeyStroke("ctrl shift TAB");
 
-            for (int i = 0; i < actions.length; i++) {
-                if (actions[i] instanceof BaseKit.CopyAction) {
-                    copyAction = (BaseKit.CopyAction) actions[i];
-                    copyAction.putValue(Action.SHORT_DESCRIPTION,
-                        "Copy the selected text to the clipboard");
-                    copyAction.putValue(Action.SMALL_ICON, Util.COPY_ICON);
-                    copyAction.putValue(Action.NAME, I18n.getString("Copy"));
-                    copyAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_C);
-                    copyAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_C, menuShortcutKeyMask));
-                } else if (actions[i] instanceof BaseKit.CutAction) {
-                    cutAction = (BaseKit.CutAction) actions[i];
-                    cutAction.putValue(Action.SHORT_DESCRIPTION, "Cut the selected text");
-                    cutAction.putValue(Action.SMALL_ICON, Util.CUT_ICON);
-                    cutAction.putValue(Action.NAME, I18n.getString("Cut"));
-                    cutAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_T);
-                    cutAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_X, menuShortcutKeyMask));
-                } else if (actions[i] instanceof BaseKit.PasteAction) {
-                    pasteAction = (BaseKit.PasteAction) actions[i];
-                    pasteAction.putValue(Action.SHORT_DESCRIPTION, "Paste text from the clipboard");
-                    pasteAction.putValue(Action.SMALL_ICON, Util.PASTE_ICON);
-                    pasteAction.putValue(Action.NAME, I18n.getString("Paste"));
-                    pasteAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_P);
-                    pasteAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_V, menuShortcutKeyMask));
-                } else if (actions[i] instanceof ExtKit.FindAction) {
-                    findAction = actions[i];
-                    findAction.putValue(Action.SHORT_DESCRIPTION, "Find text in the document");
-                    findAction.putValue(Action.SMALL_ICON, Util.FIND_ICON);
-                    findAction.putValue(Action.NAME, I18n.getString("Find"));
-                    findAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_F);
-                    findAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_F, menuShortcutKeyMask));
-                } else if (actions[i] instanceof ExtKit.ReplaceAction) {
-                    replaceAction = actions[i];
-                    replaceAction
-                        .putValue(Action.SHORT_DESCRIPTION, "Replace text in the document");
-                    replaceAction.putValue(Action.SMALL_ICON, Util.REPLACE_ICON);
-                    replaceAction.putValue(Action.NAME, I18n.getString("Replace"));
-                    replaceAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_R);
-                    replaceAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_R, menuShortcutKeyMask));
-                } else if (actions[i] instanceof BaseKit.SelectAllAction) {
-                    selectAllAction = (BaseKit.SelectAllAction) actions[i];
-                    selectAllAction
-                        .putValue(Action.SHORT_DESCRIPTION, "Select all text in the document");
-                    selectAllAction.putValue(Action.SMALL_ICON, null);
-                    selectAllAction.putValue(Action.NAME, I18n.getString("SelectAll"));
-                    selectAllAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_A);
-                    selectAllAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_A, menuShortcutKeyMask));
-                } else if (actions[i] instanceof ActionFactory.UndoAction) {
-                    undoAction = (ActionFactory.UndoAction) actions[i];
-                    undoAction
-                        .putValue(Action.SHORT_DESCRIPTION, "Undo the last change to the document");
-                    undoAction.putValue(Action.SMALL_ICON, Util.UNDO_ICON);
-                    undoAction.putValue(Action.NAME, I18n.getString("Undo"));
-                    undoAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_U);
-                    undoAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_Z, menuShortcutKeyMask));
-                } else if (actions[i] instanceof ActionFactory.RedoAction) {
-                    redoAction = (ActionFactory.RedoAction) actions[i];
-                    redoAction
-                        .putValue(Action.SHORT_DESCRIPTION, "Redo the last change to the document");
-                    redoAction.putValue(Action.SMALL_ICON, Util.REDO_ICON);
-                    redoAction.putValue(Action.NAME, I18n.getString("Redo"));
-                    redoAction.putValue(Action.MNEMONIC_KEY, KeyEvent.VK_R);
-                    redoAction.putValue(Action.ACCELERATOR_KEY,
-                        KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuShortcutKeyMask));
-                }
+        // Remove ctrl-tab from normal focus traversal
+        Set<AWTKeyStroke> forwardKeys = new HashSet<>(component.getFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS));
+        forwardKeys.remove(ctrlTab);
+        component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, forwardKeys);
+
+        // Remove ctrl-shift-tab from normal focus traversal
+        Set<AWTKeyStroke> backwardKeys = new HashSet<>(component.getFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS));
+        backwardKeys.remove(ctrlShiftTab);
+        component.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, backwardKeys);
+    }
+
+    private void setActionsEnabled(boolean value, Action... actions) {
+        for (Action action: actions) {
+            if (action != null) {
+                action.setEnabled(value);
             }
+        }
+    }
 
-            doc = textArea.getDocument();
-            doc.putProperty("filename", null);
-            windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-            //  doc.putProperty("created", Boolean.TRUE);
+    public void refreshActionState() {
+        RSyntaxTextArea textArea = editor.getTextArea();
+        if (textArea == null || tabbedPane == null) {
+            setActionsEnabled(false, undoAction, redoAction, stopAction, executeAction,
+                    executeCurrentLineAction, refreshAction);
+            return;
+        }
+
+        Server server = editor.getServer();
+        editServerAction.setEnabled(server != null);
+        removeServerAction.setEnabled(server != null);
+
+        undoAction.setEnabled(textArea.canUndo());
+        redoAction.setEnabled(textArea.canRedo());
+
+        wordWrapAction.setSelected(CONFIG.getBoolean(Config.RSTA_WORD_WRAP));
+
+        for (LineEnding lineEnding: LineEnding.values() ) {
+            lineEndingActions[lineEnding.ordinal()].setSelected(editor.getLineEnding() == lineEnding);
+        }
+
+        boolean queryRunning = editor.getQueryExecutor().running();
+        stopAction.setEnabled(queryRunning);
+        executeAction.setEnabled(!queryRunning);
+        executeCurrentLineAction.setEnabled(!queryRunning);
+        refreshAction.setEnabled(lastQuery != null && !queryRunning);
+
+        TabPanel tab = (TabPanel) tabbedPane.getSelectedComponent();
+        if (tab == null) {
+            setActionsEnabled(false, exportAction, chartAction, openInExcel, refreshAction);
         } else {
-            doc = textArea.getDocument();
+            exportAction.setEnabled(tab.isTable());
+            chartAction.setEnabled(tab.getType() == TabPanel.ResultType.TABLE);
+            openInExcel.setEnabled(tab.isTable());
+            refreshAction.setEnabled(true);
+            tab.refreshActionState(queryRunning);
         }
-
-        JComponent c = (textArea.getUI() instanceof BaseTextUI) ?
-            Utilities.getEditorUI(textArea).getExtComponent() : new JScrollPane(textArea);
-
-        doc.putProperty("server", server);
-
-        MarkingDocumentListener mdl =
-            (MarkingDocumentListener) doc.getProperty("MarkingDocumentListener");
-        if (mdl == null) {
-            mdl = new MarkingDocumentListener(c);
-            doc.putProperty("MarkingDocumentListener", mdl);
-            doc.addDocumentListener(mdl);
-        }
-        mdl.setModified(false);
-
-        UndoManager um = (UndoManager) doc.getProperty(BaseDocument.UNDO_MANAGER_PROP);
-        if (um == null) {
-            um = new UndoManager() {
-                public void undoableEditHappened(UndoableEditEvent e) {
-                    super.undoableEditHappened(e);
-                    updateUndoRedoState(this);
-                }
-
-                public synchronized void redo() throws CannotRedoException {
-                    super.redo();
-                    updateUndoRedoState(this);
-                }
-
-                public synchronized void undo() throws CannotUndoException {
-                    super.undo();
-                    updateUndoRedoState(this);
-                }
-            };
-            um.setLimit(-1);    //unlimited
-            doc.putProperty(BaseDocument.UNDO_MANAGER_PROP, um);
-            doc.addUndoableEditListener(um);
-        }
-        um.discardAllEdits();
-        updateUndoRedoState(um);
-
-        if (splitpane.getTopComponent() != c) {
-            splitpane.setTopComponent(c);
-            splitpane.setDividerLocation(0.5);
-        }
-
-        rebuildToolbar();
-        rebuildMenuBar();
-
-        textArea.requestFocus();
     }
 
-    private void refreshActionState() {
-        newFileAction.setEnabled(true);
-        arrangeAllAction.setEnabled(true);
-        openFileAction.setEnabled(true);
-        serverListAction.setEnabled(true);
-        openFileInNewWindowAction.setEnabled(true);
-        saveFileAction.setEnabled(true);
-        saveAsFileAction.setEnabled(true);
-        exportAction.setEnabled(false);
-        chartAction.setEnabled(false);
-        openInExcel.setEnabled(false);
-        stopAction.setEnabled(false);
-        executeAction.setEnabled(true);
-        executeCurrentLineAction.setEnabled(true);
-        refreshAction.setEnabled(false);
+    private String chooseFilename() {
+        if (fileChooser == null) {
+            fileChooser = new JFileChooser();
+            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
-//        helpAction.setEnabled(true);
-        aboutAction.setEnabled(true);
-        exitAction.setEnabled(true);
-        settingsAction.setEnabled(true);
-    }
+            FileFilter ff = new FileNameExtensionFilter("q script", "q");
+            fileChooser.addChoosableFileFilter(ff);
+            fileChooser.setFileFilter(ff);
+        }
 
-    private String getFilename() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-
-        FileFilter ff =
-            new FileFilter() {
-                public String getDescription() {
-                    return "q script";
-                }
-
-                public boolean accept(File file) {
-                    if (file.isDirectory() || file.getName().endsWith(".q")) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            };
-
-        chooser.addChoosableFileFilter(ff);
-
-        chooser.setFileFilter(ff);
-
-        String filename = (String) textArea.getDocument().getProperty("filename");
+        String filename = editor.getFilename();
         if (filename != null) {
-            File file = new File(filename);
-            File dir = new File(file.getPath());
-            chooser.setCurrentDirectory(dir);
+            fileChooser.setCurrentDirectory(new File(new File(filename).getPath()));
         }
 
-        int option = chooser.showOpenDialog(textArea);
-
+        int option = fileChooser.showOpenDialog(this);
         if (option == JFileChooser.APPROVE_OPTION) {
-            File sf = chooser.getSelectedFile();
-            File f = chooser.getCurrentDirectory();
-            String dir = f.getAbsolutePath();
-
-            try {
-                filename = dir + "/" + sf.getName();
-                return filename;
-            } catch (Exception e) {
-            }
+            return fileChooser.getSelectedFile().getAbsolutePath();
         }
-
         return null;
     }
 
     private void exportAsExcel(final String filename) {
-        new ExcelExporter().exportTableX(frame, table, new File(filename), false);
+        new ExcelExporter().exportTableX(frame,getSelectedTable(),new File(filename),false);
     }
 
-    private void exportAsDelimited(final TableModel model, final String filename,
-                                   final char delimiter) {
-        final String message = "Exporting data to " + filename;
-
-        final String note = "0% complete";
-
-        String title = "Studio for kdb+";
-        UIManager.put("ProgressMonitor.progressText", title);
-
-        final int min = 0;
-        final int max = 100;
-        final ProgressMonitor pm = new ProgressMonitor(frame, message, note, min, max);
+    private void exportAsDelimited(final TableModel model,final String filename,final char delimiter) {
+        UIManager.put("ProgressMonitor.progressText","Studio for kdb+");
+        final ProgressMonitor pm = new ProgressMonitor(frame,"Exporting data to " + filename,
+                "0% complete",0,100);
         pm.setMillisToDecideToPopup(100);
         pm.setMillisToPopup(100);
         pm.setProgress(0);
 
         Runnable runner = () -> {
             if (filename != null) {
-                String lineSeparator = System.getProperty("line.separator");
+                String lineSeparator = System.getProperty("line.separator");;
 
-                BufferedWriter fw;
-
-                try {
-                    fw = new BufferedWriter(new FileWriter(filename));
-
-                    for (int col = 0; col < model.getColumnCount(); col++) {
-                        if (col > 0) {
+                try (BufferedWriter fw = new BufferedWriter(new FileWriter(filename))) {
+                    for(int col = 0; col < model.getColumnCount(); col++) {
+                        if (col > 0)
                             fw.write(delimiter);
-                        }
-
                         fw.write(model.getColumnName(col));
                     }
                     fw.write(lineSeparator);
-
                     int maxRow = model.getRowCount();
-                    int lastProgress = 0;
+                    for(int r = 1; r <= maxRow; r++) {
+                        for (int col = 0;col < model.getColumnCount();col++) {
+                            if (col > 0) fw.write(delimiter);
 
-                    for (int r = 1; r <= maxRow; r++) {
-                        for (int col = 0; col < model.getColumnCount(); col++) {
-                            if (col > 0) {
-                                fw.write(delimiter);
-                            }
-
-                            K.KBase o = (K.KBase) model.getValueAt(r - 1, col);
-                            if (!o.isNull()) {
-                                fw.write(o.toString(false));
-                            }
+                            K.KBase o = (K.KBase) model.getValueAt(r - 1,col);
+                            if (!o.isNull())
+                                fw.write(o.toString(KFormatContext.NO_TYPE));
                         }
                         fw.write(lineSeparator);
-
-                        boolean cancelled = pm.isCanceled();
-
-                        if (cancelled) {
-                            break;
-                        } else {
-                            final int progress = (100 * r) / maxRow;
-                            if (progress > lastProgress) {
-                                final String note1 = "" + progress + "% complete";
-                                SwingUtilities.invokeLater(() -> {
-                                    pm.setProgress(progress);
-                                    pm.setNote(note1);
-                                });
-
-                                Thread.yield();
-                            }
-                        }
+                        if (pm.isCanceled()) break;
+                        int progress = (100 * r) / maxRow;
+                        String note = "" + progress + "% complete";
+                        SwingUtilities.invokeLater( () -> {
+                            pm.setProgress(progress);
+                            pm.setNote(note);
+                        } );
                     }
 
-                    fw.close();
-                } catch (Exception ex) {
-                    StudioOptionPane.showMessageDialog(frame, ex.getMessage(), "Error",
-                        JOptionPane.ERROR_MESSAGE, Util.ERROR_ICON);
-                } finally {
+                }
+                catch (IOException e) {
+                    log.error("Error in writing to file {}", filename, e);
+                }
+                finally {
                     pm.close();
                 }
             }
         };
 
-        Thread t = new Thread(runner);
-        t.setName("export");
+        Thread t = new Thread(runner,"Exporter");
         t.setPriority(Thread.MIN_PRIORITY);
         t.start();
     }
 
-    private void exportAsXml(final TableModel model, final String filename) {
-        final String message = "Exporting data to " + filename;
-
-        final String note = "0% complete";
-
-        String title = "Studio for kdb+";
-        UIManager.put("ProgressMonitor.progressText", title);
-
-        final int min = 0;
-        final int max = 100;
-        final ProgressMonitor pm = new ProgressMonitor(frame, message, note, min, max);
+    private void exportAsXml(final TableModel model,final String filename) {
+        UIManager.put("ProgressMonitor.progressText","Studio for kdb+");
+        final ProgressMonitor pm = new ProgressMonitor(frame,"Exporting data to " + filename,
+                "0% complete",0,100);
         pm.setMillisToDecideToPopup(100);
         pm.setMillisToPopup(100);
         pm.setProgress(0);
 
         Runnable runner = () -> {
             if (filename != null) {
-                String lineSeparator = System.getProperty("line.separator");
+                String lineSeparator = System.getProperty("line.separator");;
 
-                BufferedWriter fw = null;
-
-                try {
-                    fw = new BufferedWriter(new FileWriter(filename));
-
+                try (BufferedWriter fw = new BufferedWriter(new FileWriter(filename))) {
                     fw.write("<R>");
-
                     int maxRow = model.getRowCount();
-                    int lastProgress = 0;
-
                     fw.write(lineSeparator);
 
                     String[] columns = new String[model.getColumnCount()];
-                    for (int col = 0; col < model.getColumnCount(); col++) {
+                    for (int col = 0; col < model.getColumnCount(); col++)
                         columns[col] = model.getColumnName(col);
-                    }
 
                     for (int r = 1; r <= maxRow; r++) {
                         fw.write("<r>");
                         for (int col = 0; col < columns.length; col++) {
                             fw.write("<" + columns[col] + ">");
 
-                            K.KBase o = (K.KBase) model.getValueAt(r - 1, col);
-                            if (!o.isNull()) {
-                                fw.write(o.toString(false));
-                            }
+                            K.KBase o = (K.KBase) model.getValueAt(r - 1,col);
+                            if (!o.isNull())
+                                fw.write(o.toString(KFormatContext.NO_TYPE));
 
                             fw.write("</" + columns[col] + ">");
                         }
                         fw.write("</r>");
                         fw.write(lineSeparator);
 
-                        boolean cancelled = pm.isCanceled();
-
-                        if (cancelled) {
-                            break;
-                        } else {
-                            final int progress = (100 * r) / maxRow;
-                            if (progress > lastProgress) {
-                                final String note1 = "" + progress + "% complete";
-                                SwingUtilities.invokeLater(() -> {
-                                    pm.setProgress(progress);
-                                    pm.setNote(note1);
-                                });
-
-                                Thread.yield();
-                            }
-                        }
+                        if (pm.isCanceled()) break;
+                        int progress = (100 * r) / maxRow;
+                        String note = "" + progress + "% complete";
+                        SwingUtilities.invokeLater(() -> {
+                            pm.setProgress(progress);
+                            pm.setNote(note);
+                        });
                     }
                     fw.write("</R>");
-
-                    fw.close();
-                } catch (FileNotFoundException ex) {
-                    ex.printStackTrace();  //To change body of catch statement use Options | File Templates.
-                } catch (IOException ex) {
-                    ex.printStackTrace();  //To change body of catch statement use Options | File Templates.
-                } catch (Exception ex) {
-                    ex.printStackTrace();  //To change body of catch statement use Options | File Templates.
-                } finally {
+                }
+                catch (IOException e) {
+                    log.error("Error in writing to file {}", filename, e);
+                }
+                finally {
                     pm.close();
                 }
             }
         };
 
-        Thread t = new Thread(runner);
-        t.setName("export");
+        Thread t = new Thread(runner, "Exporter");
         t.setPriority(Thread.MIN_PRIORITY);
         t.start();
     }
 
     private void exportAsTxt(String filename) {
-        exportAsDelimited(table.getModel(), filename, '\t');
+        exportAsDelimited(getSelectedTable().getModel(),filename,'\t');
     }
 
     private void exportAsCSV(String filename) {
-        exportAsDelimited(table.getModel(), filename, ',');
+        exportAsDelimited(getSelectedTable().getModel(),filename,',');
     }
 
     private void export() {
@@ -648,67 +384,63 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         FileFilter xmlFilter = null;
         FileFilter xlsFilter = null;
 
-        if (table != null) {
+        if (getSelectedTable() != null) {
             csvFilter =
-                new FileFilter() {
-                    public String getDescription() {
-                        return "csv (Comma delimited)";
-                    }
-
-                    public boolean accept(File file) {
-                        if (file.isDirectory() || file.getName().endsWith(".csv")) {
-                            return true;
-                        } else {
-                            return false;
+                    new FileFilter() {
+                        public String getDescription() {
+                            return "csv (Comma delimited)";
                         }
-                    }
-                };
+
+                        public boolean accept(File file) {
+                            if (file.isDirectory() || file.getName().endsWith(".csv"))
+                                return true;
+                            else
+                                return false;
+                        }
+                    };
 
             txtFilter =
-                new FileFilter() {
-                    public String getDescription() {
-                        return "txt (Tab delimited)";
-                    }
-
-                    public boolean accept(File file) {
-                        if (file.isDirectory() || file.getName().endsWith(".txt")) {
-                            return true;
-                        } else {
-                            return false;
+                    new FileFilter() {
+                        public String getDescription() {
+                            return "txt (Tab delimited)";
                         }
-                    }
-                };
+
+                        public boolean accept(File file) {
+                            if (file.isDirectory() || file.getName().endsWith(".txt"))
+                                return true;
+                            else
+                                return false;
+                        }
+                    };
 
             xmlFilter =
-                new FileFilter() {
-                    public String getDescription() {
-                        return "xml";
-                    }
-
-                    public boolean accept(File file) {
-                        if (file.isDirectory() || file.getName().endsWith(".xml")) {
-                            return true;
-                        } else {
-                            return false;
+                    new FileFilter() {
+                        public String getDescription() {
+                            return "xml";
                         }
-                    }
-                };
+
+                        public boolean accept(File file) {
+                            if (file.isDirectory() || file.getName().endsWith(".xml"))
+                                return true;
+                            else
+                                return false;
+                        }
+                    };
 
 
             xlsFilter =
-                new FileFilter() {
-                    public String getDescription() {
-                        return "xls (Microsoft Excel)";
-                    }
-
-                    public boolean accept(File file) {
-                        if (file.isDirectory() || file.getName().endsWith(".xls")) {
-                            return true;
-                        } else {
-                            return false;
+                    new FileFilter() {
+                        public String getDescription() {
+                            return "xls (Microsoft Excel)";
                         }
-                    }
-                };
+
+                        public boolean accept(File file) {
+                            if (file.isDirectory() || file.getName().endsWith(".xls"))
+                                return true;
+                            else
+                                return false;
+                        }
+                    };
 
             chooser.addChoosableFileFilter(csvFilter);
             chooser.addChoosableFileFilter(txtFilter);
@@ -721,20 +453,18 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             File dir = new File(file.getPath());
             chooser.setCurrentDirectory(dir);
             chooser.ensureFileIsVisible(file);
-            if (table != null) {
-                if (exportFilename.endsWith(".xls")) {
+            if (getSelectedTable() != null)
+                if (exportFilename.endsWith(".xls"))
                     chooser.setFileFilter(xlsFilter);
-                } else if (exportFilename.endsWith(".csv")) {
+                else if (exportFilename.endsWith(".csv"))
                     chooser.setFileFilter(csvFilter);
-                } else if (exportFilename.endsWith(".xml")) {
+                else if (exportFilename.endsWith(".xml"))
                     chooser.setFileFilter(xmlFilter);
-                } else if (exportFilename.endsWith(".txt")) {
+                else if (exportFilename.endsWith(".txt"))
                     chooser.setFileFilter(txtFilter);
-                }
-            }
         }
 
-        int option = chooser.showSaveDialog(textArea);
+        int option = chooser.showSaveDialog(this);
 
         if (option == JFileChooser.APPROVE_OPTION) {
             File sf = chooser.getSelectedFile();
@@ -749,872 +479,655 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
 
                 exportFilename = dir + "/" + sf.getName();
 
-                if (table != null) {
-                    if (exportFilename.endsWith(".xls")) {
+                if (getSelectedTable() != null)
+                    if (exportFilename.endsWith(".xls"))
                         exportAsExcel(exportFilename);
-                    } else if (exportFilename.endsWith(".csv")) {
+                    else if (exportFilename.endsWith(".csv"))
                         exportAsCSV(exportFilename);
-                    } else if (exportFilename.endsWith(".txt")) {
+                    else if (exportFilename.endsWith(".txt"))
                         exportAsTxt(exportFilename);
-                    } else if (exportFilename.endsWith(".xml")) {
-                        exportAsXml(table.getModel(), exportFilename);
-                    }
+                    else if (exportFilename.endsWith(".xml"))
+                        exportAsXml(getSelectedTable().getModel(),exportFilename);
                     /*                    else if (exportFilename.endsWith(".res")) {
                     exportAsBin(exportFilename);
                     }
                      */
-                    else if (ff == csvFilter) {
+                    else
+                    if (ff == csvFilter)
                         exportAsCSV(exportFilename);
-                    } else if (ff == xlsFilter) {
+                    else if (ff == xlsFilter)
                         exportAsExcel(exportFilename);
-                    } else if (ff == txtFilter) {
+                    else if (ff == txtFilter)
                         exportAsTxt(exportFilename);
-                    } else if (ff == xmlFilter) {
-                        exportAsXml(table.getModel(), exportFilename);
-                    }
-                        /*else if( ff == binFilter){
-                        exportAsBin(exportFilename);
-                        }
-                         */
-                    else {
-                        StudioOptionPane.showMessageDialog(frame,
-                            "You did not specify what format to export the file as.\n Cancelling data export",
-                            "Warning",
-                            JOptionPane.WARNING_MESSAGE,
-                            Util.WARNING_ICON);
-                    }
-                }
-            } catch (Exception e) {
-                StudioOptionPane.showMessageDialog(frame,
-                    "An error occurred whilst writing the export file.\n Details are: " +
-                        e.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE,
-                    Util.ERROR_ICON);
-            } finally {
-                //            frame.setCursor(cursor);
+                    else if (ff == xmlFilter)
+                        exportAsXml(getSelectedTable().getModel(),exportFilename);
+                    else
+                        StudioOptionPane.showWarning(frame,
+                                "You did not specify what format to export the file as.\n Cancelling data export",
+                                "Warning");
+            }
+            catch (Exception e) {
+                StudioOptionPane.showError(frame,
+                        "Error",
+                        "An error occurred whilst writing the export file.\n Details are: " + e.getMessage());
             }
         }
     }
 
     public void newFile() {
-        try {
-            String filename = (String) textArea.getDocument().getProperty("filename");
-            if (!saveIfModified(filename)) {
-                return;
-            }
+        if (!checkAndSaveTab(editor)) return;
 
-            textArea.getDocument().remove(0, textArea.getDocument().getLength());
-            textArea.getDocument().putProperty("filename", null);
-            windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-            initDocument();
-            refreshFrameTitle();
-        } catch (BadLocationException ex) {
-            ex.printStackTrace();
-        }
+        editor.setFilename(null);
+        editor.init(Content.getEmpty());
     }
 
-    public void openFile() {
-        String filename = (String) textArea.getDocument().getProperty("filename");
-        if (!saveIfModified(filename)) {
-            return;
-        }
-
-        filename = getFilename();
-
-        if (filename != null) {
-            loadFile(filename);
-            addToMruFiles(filename);
-        }
-    }
-
-    // returns true to continue
-    public boolean saveIfModified(String filename) {
-        if (getModified()) {
-            int choice = StudioOptionPane.showOptionDialog(frame,
-                "Changes not saved.\nSave now?",
-                "Save changes?",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                Util.QUESTION_ICON,
-                null, // use standard button titles
-                null);      // no default selection
-
-            if (choice == JOptionPane.YES_OPTION) {
-                try {
-                    if (saveFile(filename, false))
-                    // was cancelled so return
-                    {
-                        return false;
-                    }
-                } catch (Exception e) {
-                    return false;
-                }
-                return true;
-            } else if ((choice == JOptionPane.CANCEL_OPTION) ||
-                (choice == JOptionPane.CLOSED_OPTION)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void loadMRUFile(String filename, String oldFilename) {
-        if (!saveIfModified(oldFilename)) {
-            return;
-        }
-
-        loadFile(filename);
+    private void openFile() {
+        String filename = chooseFilename();
+        if (filename == null) return;
         addToMruFiles(filename);
-        setServer(server);
+        addTab(editor.getServer(), filename);
     }
 
-    private void addToMruFiles(String filename) {
-        if (filename == null) {
+    public void loadMRUFile(String filename) {
+        if (!checkAndSaveTab(editor)) return;
+
+        if (!loadFile(filename)) return;
+        addToMruFiles(filename);
+        refreshTitle();
+        rebuildAll();
+    }
+
+    public void addToMruFiles(String filename) {
+        if (filename == null)
             return;
-        }
 
         Vector v = new Vector();
         v.add(filename);
-        String[] mru = Config.getInstance().getMRUFiles();
-        for (int i = 0; i < mru.length; i++) {
-            if (!v.contains(mru[i])) {
+        String[] mru = CONFIG.getMRUFiles();
+        for (int i = 0;i < mru.length;i++)
+            if (!v.contains(mru[i]))
                 v.add(mru[i]);
-            }
-        }
-        Config.getInstance().saveMRUFiles((String[]) v.toArray(new String[0]));
+        CONFIG.saveMRUFiles((String[]) v.toArray(new String[0]));
         rebuildMenuBar();
     }
 
-    public static String getContents(File aFile) {
-        StringBuilder contents = new StringBuilder();
-
+    public boolean loadFile(String filename) {
+        Content content = Content.getEmpty();
         try {
-            InputStreamReader isr = new InputStreamReader(new FileInputStream(aFile),
-                StandardCharsets.UTF_8);
-            BufferedReader input = new BufferedReader(isr);
-            try {
-
-                String line;
-                while ((line = input.readLine()) != null) {
-                    contents.append(line);
-                    contents.append(System.getProperty("line.separator"));
-                }
-            } finally {
-                input.close();
+            content = FileReaderWriter.read(filename);
+            if (content.hasMixedLineEnding()) {
+                StudioOptionPane.showMessage(frame, "The file " + filename + " has mixed line endings. Mixed line endings are not supported.\n\n" +
+                                "All line endings are set to " + content.getLineEnding() + " style.",
+                        "Mixed Line Ending");
             }
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            return true;
+        } catch (IOException e) {
+            log.error("Failed to load file {}", filename, e);
+            StudioOptionPane.showError(frame, "Failed to load file "+filename + ".\n" + e.getMessage(),
+                    "Error in file load");
+        } finally {
+            editor.setFilename(filename);
+            editor.init(content);
         }
-
-        return contents.toString();
+        return false;
     }
 
-    public void loadFile(String filename) {
-        try {
-            String s = getContents(new File(filename));
-
-            BaseDocument doc = (BaseDocument) textArea.getDocument();
-            doc.remove(0, textArea.getDocument().getLength());
-            doc.insertString(0, s, null);
-            doc.clearLastEvent();
-            doc.putProperty("filename", filename);
-            windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-            initDocument();
-            textArea.setCaretPosition(0);
-            refreshFrameTitle();
-        } catch (BadLocationException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    public boolean saveAsFile() {
+    private boolean saveAsFile(EditorTab editor) {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogType(JFileChooser.SAVE_DIALOG);
         chooser.setDialogTitle("Save script as");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
         FileFilter ff =
-            new FileFilter() {
-                public String getDescription() {
-                    return "q script";
-                }
-
-                public boolean accept(File file) {
-                    if (file.isDirectory() || file.getName().endsWith(".q")) {
-                        return true;
-                    } else {
-                        return false;
+                new FileFilter() {
+                    public String getDescription() {
+                        return "q script";
                     }
-                }
-            };
+
+                    public boolean accept(File file) {
+                        if (file.isDirectory() || file.getName().endsWith(".q"))
+                            return true;
+                        else
+                            return false;
+                    }
+                };
 
         chooser.addChoosableFileFilter(ff);
 
         chooser.setFileFilter(ff);
 
-        String filename = (String) textArea.getDocument().getProperty("filename");
+        String filename = editor.getFilename();
         if (filename != null) {
             File file = new File(filename);
             File dir = new File(file.getPath());
             chooser.setCurrentDirectory(dir);
+            chooser.setSelectedFile(file);
         }
 
-//        chooser.setMultiSelectionEnabled(true);
-        int option = chooser.showSaveDialog(textArea);
+        int option = chooser.showSaveDialog(this);
+        if (option != JFileChooser.APPROVE_OPTION) return false;
+        File sf = chooser.getSelectedFile();
+        filename = sf.getAbsolutePath();
 
-        if (option == JFileChooser.APPROVE_OPTION) {
-            File sf = chooser.getSelectedFile();
-            File f = chooser.getCurrentDirectory();
-            String dir = f.getAbsolutePath();
-
-            try {
-                filename = dir + "/" + sf.getName();
-                sf = new File(filename);
-
-                if (sf.exists()) {
-                    int choice = StudioOptionPane.showOptionDialog(frame,
-                        filename + " already exists.\nOverwrite?",
-                        "Overwrite?",
-                        JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        Util.QUESTION_ICON,
-                        null, // use standard button titles
-                        null);      // no default selection
-
-                    if (choice != JOptionPane.YES_OPTION) {
-                        return false;
-                    }
-                }
-
-                return saveFile(filename, true);
-            } catch (Exception e) {
+        if (chooser.getFileFilter() == ff) {
+            if (! sf.getName().endsWith(".q")) {
+                filename = filename + ".q";
             }
         }
-        return false;
+
+        if (new File(filename).exists()) {
+            int choice = StudioOptionPane.showYesNoDialog(frame,
+                    filename + " already exists.\nOverwrite?",
+                    "Overwrite?");
+
+            if (choice != JOptionPane.YES_OPTION)
+                return false;
+        }
+
+        editor.setFilename(filename);
+        return editor.saveFileOnDisk(false);
     }
 
-    //   private boolean wasLoaded=false;
-    // returns true if saved, false if error or cancelled
-    public boolean saveFile(String filename, boolean force) {
-        if (filename == null) {
-            return saveAsFile();
+    private boolean saveEditor(EditorTab editor) {
+        if (editor.getFilename() == null) {
+            return saveAsFile(editor);
+        } else {
+            return editor.saveFileOnDisk(false);
         }
+    }
 
-        try {
-            if (!force) {
-                if (null == textArea.getDocument().getProperty("filename")) {
-                    return saveAsFile();
-                }
+    private void saveAll() {
+        for (StudioPanel panel: allPanels) {
+            int count = panel.tabbedEditors.getTabCount();
+            for (int index=0; index<count; index++) {
+                panel.getEditor(index).saveFileOnDisk(false);
             }
-
-            String lineEnding = Config.getInstance().getLineEnding();
-            if (lineEnding.equals("CRLF")) {
-                textArea.getDocument()
-                    .putProperty(DefaultEditorKit.EndOfLineStringProperty, "\r\n");
-            } else if (lineEnding.equals("LF")) {
-                textArea.getDocument().putProperty(DefaultEditorKit.EndOfLineStringProperty, "\n");
-            }
-
-            textArea.write(new BufferedWriter(
-                new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)));
-            textArea.getDocument().putProperty("filename", filename);
-            windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-            setModified(false);
-            addToMruFiles(filename);
-            refreshFrameTitle();
-            return true;
-        } catch (Exception e) {
         }
-
-        return false;
     }
 
     private void arrangeAll() {
-        int noWins = windowList.size();
+        int noWins = allPanels.size();
 
-        Iterator i = windowList.iterator();
+        Iterator<StudioPanel> panelIterator = allPanels.iterator();
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-        int noRows = noWins > 3 ? 3 : noWins;
+        int noRows = Math.min(noWins, 3);
         int height = screenSize.height / noRows;
 
-        for (int row = 0; row < noRows; row++) {
+        for (int row = 0;row < noRows;row++) {
             int noCols = (noWins / 3);
 
-            if ((row == 0) && ((noWins % 3) > 0)) {
+            if ((row == 0) && ((noWins % 3) > 0))
                 noCols++;
-            } else if ((row == 1) && ((noWins % 3) > 1)) {
+            else if ((row == 1) && ((noWins % 3) > 1))
                 noCols++;
-            }
 
             int width = screenSize.width / noCols;
 
-            for (int col = 0; col < noCols; col++) {
-                Object o = i.next();
-                JFrame f;
+            for (int col = 0;col < noCols;col++) {
+                StudioPanel panel = panelIterator.next();
+                JFrame frame = panel.frame;
 
-                if (o instanceof StudioPanel) {
-                    f = ((StudioPanel) o).frame;
-                } else {
-                    f = (JFrame) o;
-                }
-
-                f.setSize(width, height);
-                f.setLocation(col * width, ((noRows - 1) - row) * height);
-                ensureDeiconified(f);
+                frame.setSize(width,height);
+                frame.setLocation(col * width,((noRows - 1) - row) * height);
+                ensureDeiconified(frame);
             }
         }
-    }
-
-    private void setModified(boolean value) {
-        if (textArea != null) {
-            Document doc = textArea.getDocument();
-
-            if (doc != null) {
-                MarkingDocumentListener mdl =
-                    (MarkingDocumentListener) doc.getProperty("MarkingDocumentListener");
-                if (mdl != null) {
-                    mdl.setModified(value);
-                }
-            }
-        }
-    }
-
-    private boolean getModified() {
-        if (textArea != null) {
-            Document doc = textArea.getDocument();
-
-            if (doc != null) {
-                MarkingDocumentListener mdl =
-                    (MarkingDocumentListener) doc.getProperty("MarkingDocumentListener");
-                if (mdl != null) {
-                    return mdl.getModified();
-                }
-            }
-        }
-
-        return true;
     }
 
     private void setServer(Server server) {
-        if (server == null) {
-            return;
+        if (server == null) return;
+        editor.setServer(server);
+
+        if (!loading) {
+            CONFIG.addServerToHistory(server);
+            serverHistory.add(server);
+
+            refreshTitle();
+            rebuildAll();
         }
-
-        this.server = server;
-
-        if (textArea != null) {
-            Document doc = textArea.getDocument();
-
-            if (doc != null) {
-                doc.putProperty("server", server);
-            }
-            Utilities.getEditorUI(textArea).getComponent()
-                .setBackground(server.getBackgroundColor());
-        }
-
-        new ReloadQKeywords(server);
-        Config.getInstance().setLRUServer(server);
-
-        refreshFrameTitle();
-        windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
     }
 
     private void initActions() {
-        StudioPanel thePanel = this;
-        newFileAction = new UserAction(I18n.getString("New"),
-            Util.NEW_DOCUMENT_ICON,
-            "Create a blank script",
-            KeyEvent.VK_N,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                //   PrintUtilities.printComponent(textArea);
-                newFile();
-            }
-        };
+        cleanAction = UserAction.create("Clean", Util.NEW_DOCUMENT_ICON, "Clean editor script", KeyEvent.VK_N,
+                null, e -> newFile());
 
-        arrangeAllAction = new UserAction(I18n.getString("ArrangeAll"),
-            Util.ARRANGE_WINDOWS_ICON,
-            "Arrange all windows on screen",
-            KeyEvent.VK_A,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                arrangeAll();
-            }
-        };
+        arrangeAllAction = UserAction.create(I18n.getString("ArrangeAll"), Util.BLANK_ICON, "Arrange all windows on screen",
+                KeyEvent.VK_A, null, e -> arrangeAll());
 
-        minMaxDividerAction = new UserAction(I18n.getString("MaximizeEditorPane"),
-            Util.MAXIMIZE_EDITOR_ICON,
-            "Maximize editor pane",
-            KeyEvent.VK_M,
-            KeyStroke.getKeyStroke(KeyEvent.VK_M, menuShortcutKeyMask)) {
-            public void actionPerformed(ActionEvent e) {
-                minMaxDivider();
-            }
-        };
+        minMaxDividerAction = UserAction.create(I18n.getString("MaximizeEditorPane"), Util.BLANK_ICON, "Maximize editor pane",
+                KeyEvent.VK_M, KeyStroke.getKeyStroke(KeyEvent.VK_M, menuShortcutKeyMask),
+                e -> minMaxDivider());
 
-        toggleDividerOrientationAction = new UserAction(I18n.getString("ToggleDividerOrientation"),
-            Util.DIVIDER_ORIENTATION_ICON,
-            "Toggle the window divider's orientation",
-            KeyEvent.VK_C,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                toggleDividerOrientation();
-            }
-        };
+        toggleDividerOrientationAction = UserAction.create(I18n.getString("ToggleDividerOrientation"), Util.BLANK_ICON,
+                "Toggle the window divider's orientation", KeyEvent.VK_C, null, e -> toggleDividerOrientation());
 
-        closeFileAction = new UserAction(I18n.getString("Close"),
-            Util.CLOSE_ONE_ICON,
-            "Close current document",
-            KeyEvent.VK_C,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                quitWindow();
-                if (windowList.size() == 0) {
-                    System.exit(0);
-                }
-            }
-        };
+        closeTabAction = UserAction.create("Close Tab", Util.BLANK_ICON, "Close current tab", KeyEvent.VK_W,
+                KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutKeyMask), e -> closeTab());
 
-        openFileAction = new UserAction(I18n.getString("Open"),
-            Util.OPEN_ICON,
-            "Open a script",
-            KeyEvent.VK_O,
-            KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutKeyMask)) {
-            public void actionPerformed(ActionEvent e) {
-                openFile();
-            }
-        };
+        closeFileAction = UserAction.create("Close Window", Util.BLANK_ICON, "Close current window (close all tabs)",
+                KeyEvent.VK_C, null, e -> closePanel());
 
-        openFileInNewWindowAction = new UserAction(I18n.getString("NewWindow"),
-            Util.NEW_WINDOW_ICON,
-            "Open a new window",
-            KeyEvent.VK_N,
-            KeyStroke.getKeyStroke(KeyEvent.VK_N, menuShortcutKeyMask)) {
-            public void actionPerformed(ActionEvent e) {
-                new StudioPanel(server, null, null);
-            }
-        };
+        openFileAction = UserAction.create(I18n.getString("Open"), Util.FOLDER_ICON, "Open a script", KeyEvent.VK_O,
+                KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutKeyMask), e -> openFile());
 
-        serverListAction = new UserAction(I18n.getString("ServerList"),
-            Util.SERVER_TREE_ICON,
-            "Show sever list",
-            KeyEvent.VK_L,
-            KeyStroke.getKeyStroke(KeyEvent.VK_L, menuShortcutKeyMask | Event.SHIFT_MASK)) {
-            public void actionPerformed(ActionEvent e) {
-                if (serverList == null) {
+        newWindowAction = UserAction.create(I18n.getString("NewWindow"), Util.BLANK_ICON, "Open a new window",
+                KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuShortcutKeyMask | InputEvent.SHIFT_MASK),
+                e -> new StudioPanel().addTab(editor.getServer(), null) );
 
-                    Point location = frame.getLocation();
-                    GraphicsDevice[] devices =
-                        GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
-                    Rectangle screenBounds = Stream.of(devices)
-                        .map(d -> d.getDefaultConfiguration().getBounds())
-                        .filter(b -> b.contains(location))
-                        .findFirst().orElse(null);
+        newTabAction = UserAction.create("New Tab", Util.BLANK_ICON, "Open a new tab", KeyEvent.VK_T,
+                KeyStroke.getKeyStroke(KeyEvent.VK_N, menuShortcutKeyMask),
+                e -> addTab(editor.getServer(), null));
 
-                    Rectangle bounds = Config.getInstance().getServerListBounds();
-                    bounds.translate(frame.getX(), frame.getY());
+        serverListAction = UserAction.create(I18n.getString("ServerList"), Util.TEXT_TREE_ICON, "Show server list",
+                KeyEvent.VK_L, KeyStroke.getKeyStroke(KeyEvent.VK_L, menuShortcutKeyMask | InputEvent.SHIFT_MASK),
+                e -> showServerList(false));
 
-                    serverList = new ServerList(frame, thePanel);
-                    if (screenBounds != null && screenBounds.contains(bounds)) {
-                        serverList.setBounds(bounds);
-                    } else {
-                        serverList.align();
+        serverHistoryAction = UserAction.create("Server History", null, "Recent selected servers", KeyEvent.VK_R,
+                KeyStroke.getKeyStroke(KeyEvent.VK_R, menuShortcutKeyMask | InputEvent.SHIFT_MASK),
+                e -> showServerList(true));
+
+        importFromQPadAction = UserAction.create("Import Servers from QPad...", null, "Import from Servers.cfg",
+                KeyEvent.VK_I, null, e -> QPadImport.doImport(this));
+
+        editServerAction = UserAction.create(I18n.getString("Edit"), Util.SERVER_INFORMATION_ICON, "Edit the server details",
+                KeyEvent.VK_E, null, e -> {
+                    Server s = new Server(editor.getServer());
+
+                    EditServerForm f = new EditServerForm(frame, s);
+                    f.alignAndShow();
+                    if (f.getResult() == ACCEPTED) {
+                        if (stopAction.isEnabled())
+                            stopAction.actionPerformed(e);
+
+                        ConnectionPool.getInstance().purge(editor.getServer());
+                        CONFIG.removeServer(editor.getServer());
+
+                        s = f.getServer();
+                        CONFIG.addServer(s);
+                        setServer(s);
+                        rebuildAll();
                     }
-                }
-                serverList.updateServerTree(Config.getInstance().getServerTree(), server);
-                serverList.setVisible(true);
+                });
 
-                Rectangle bounds = serverList.getBounds();
-                bounds.translate(-frame.getX(), -frame.getY());
-                Config.getInstance().setServerListBounds(bounds);
 
-                Server selectedServer = serverList.getSelectedServer();
-                if (selectedServer == null || selectedServer.equals(server)) {
-                    return;
-                }
-
-                setServer(selectedServer);
-                rebuildToolbar();
-            }
-        };
-
-        editServerAction = new UserAction(I18n.getString("Edit"),
-            Util.SERVER_EDIT_ICON,
-            "Edit the server details",
-            KeyEvent.VK_E,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                Server s = new Server(server);
-
-                EditServerForm f = new EditServerForm(frame, s);
-                f.alignAndShow();
-                if (f.getResult() == ACCEPTED) {
-                    if (stopAction.isEnabled()) {
-                        stopAction.actionPerformed(e);
+        addServerAction = UserAction.create(I18n.getString("Add"), Util.ADD_SERVER_ICON, "Configure a new server",
+                KeyEvent.VK_A, null, e -> {
+                    AddServerForm f = new AddServerForm(frame);
+                    f.alignAndShow();
+                    if (f.getResult() == ACCEPTED) {
+                        Server s = f.getServer();
+                        CONFIG.addServer(s);
+                        ConnectionPool.getInstance().purge(s);   //?
+                        setServer(s);
+                        rebuildAll();
                     }
+                });
 
-                    ConnectionPool.getInstance().purge(server);
-                    Config.getInstance().removeServer(server);
+        removeServerAction = UserAction.create(I18n.getString("Remove"), Util.DELETE_SERVER_ICON, "Remove this server",
+                KeyEvent.VK_R, null, e -> {
+                    int choice = JOptionPane.showOptionDialog(frame,
+                            "Remove server " + editor.getServer().getFullName() + " from list?",
+                            "Remove server?",
+                            JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE,
+                            Util.QUESTION_ICON,
+                            null, // use standard button titles
+                            null);      // no default selection
 
-                    s = f.getServer();
-                    Config.getInstance().addServer(s);
-                    setServer(s);
-                    rebuildToolbar();
-                    rebuildMenuBar();
+                    if (choice == 0) {
+                        CONFIG.removeServer(editor.getServer());
 
-                    windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-                }
-            }
-        };
+                        Server[] servers = CONFIG.getServers();
 
+                        if (servers.length > 0)
+                            setServer(servers[0]);
 
-        addServerAction = new UserAction(I18n.getString("Add"),
-            Util.ADD_SERVER_ICON,
-            "Configure a new server",
-            KeyEvent.VK_A,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                AddServerForm f = new AddServerForm(frame);
-                f.alignAndShow();
-                if (f.getResult() == ACCEPTED) {
-                    Server s = f.getServer();
-                    Config.getInstance().addServer(s);
-                    ConnectionPool.getInstance().purge(s);   //?
-                    setServer(s);
-                    rebuildToolbar();
-                    rebuildMenuBar();
-                    windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-                }
-            }
-        };
-
-        removeServerAction = new UserAction(I18n.getString("Remove"),
-            Util.DELETE_SERVER_ICON,
-            "Remove this server",
-            KeyEvent.VK_R,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                int choice = StudioOptionPane.showOptionDialog(frame,
-                    "Remove server " + server.getFullName() + " from list?",
-                    "Remove server?",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    Util.QUESTION_ICON,
-                    null, // use standard button titles
-                    null);      // no default selection
-
-                if (choice == 0) {
-                    Config.getInstance().removeServer(server);
-
-                    Server[] servers = Config.getInstance().getServers();
-
-                    if (servers.length > 0) {
-                        setServer(servers[0]);
+                        rebuildAll();
                     }
-
-                    rebuildToolbar();
-                    rebuildMenuBar();
-                    windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-                }
-            }
-        };
+                });
 
 
-        saveFileAction = new UserAction(I18n.getString("Save"),
-            Util.SAVE_ICON,
-            "Save the script",
-            KeyEvent.VK_S,
-            KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutKeyMask)) {
-            public void actionPerformed(ActionEvent e) {
-                String filename = (String) textArea.getDocument().getProperty("filename");
-                saveFile(filename, false);
-            }
-        };
+        saveFileAction = UserAction.create(I18n.getString("Save"), Util.DISKS_ICON, "Save the script",
+                KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutKeyMask),
+                e -> saveEditor(editor));
 
-        saveAsFileAction = new UserAction(I18n.getString("SaveAs"),
-            Util.SAVE_AS_ICON,
-            "Save script as",
-            KeyEvent.VK_A,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                saveAsFile();
-            }
-        };
+        saveAllFilesAction = UserAction.create("Save All...", Util.BLANK_ICON, "Save all files",
+                KeyEvent.VK_L, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutKeyMask | InputEvent.SHIFT_MASK),
+                e -> saveAll());
 
-        exportAction = new UserAction(I18n.getString("Export"),
-            Util.EXPORT_ICON,
-            "Export result set",
-            KeyEvent.VK_E,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                export();
-            }
-        };
+        saveAsFileAction = UserAction.create(I18n.getString("SaveAs"), Util.SAVE_AS_ICON, "Save script as",
+                KeyEvent.VK_A, null, e -> saveAsFile(editor));
 
-        chartAction = new UserAction(I18n.getString("Chart"),
-            Util.CHART_ICON,
-            "Chart current data set",
-            KeyEvent.VK_E,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                new LineChart((KTableModel) table.getModel());
-                //new PriceVolumeChart(table);
-            }
-        };
+        exportAction = UserAction.create(I18n.getString("Export"), Util.EXPORT_ICON, "Export result set",
+                KeyEvent.VK_E, null, e -> export());
 
+        chartAction = UserAction.create(I18n.getString("Chart"), Util.CHART_ICON, "Chart current data set",
+                KeyEvent.VK_E, null, e -> new Chart((KTableModel) getSelectedTable().getModel()));
 
-        stopAction = new UserAction(I18n.getString("Stop"),
-            Util.STOP_ICON,
-            "Stop the query",
-            KeyEvent.VK_S,
-            null) {
-            public void actionPerformed(ActionEvent e) {
-                if (worker != null) {
-                    worker.interrupt();
-                    stopAction.setEnabled(false);
-                    textArea.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-                }
-            }
-        };
+        stopAction = UserAction.create(I18n.getString("Stop"), Util.STOP_ICON, "Stop the query",
+                KeyEvent.VK_S, null, e -> editor.getQueryExecutor().cancel());
 
+        openInExcel = UserAction.create(I18n.getString("OpenInExcel"), Util.EXCEL_ICON, "Open in Excel",
+                KeyEvent.VK_O, null, e -> {
+                    try {
+                        File file = File.createTempFile("studioExport", ".xlsx");
+                        new ExcelExporter().exportTableX(frame, getSelectedTable(), file, true);
+                    } catch (IOException ex) {
+                        log.error("Failed to create temporary file", ex);
+                        StudioOptionPane.showError(frame, "Failed to Open in Excel " + ex.getMessage(),"Error");
+                    }
+                });
 
-        openInExcel = new UserAction(I18n.getString("OpenInExcel"),
-            Util.EXCEL_ICON,
-            "Open in Excel",
-            KeyEvent.VK_O,
-            null) {
+        executeAction = UserAction.create(I18n.getString("Execute"), Util.TABLE_SQL_RUN_ICON, "Execute the full or highlighted text as a query",
+                KeyEvent.VK_E, KeyStroke.getKeyStroke(KeyEvent.VK_E, menuShortcutKeyMask), e -> executeQuery());
 
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    File file = File.createTempFile("studioExport", ".xlsx");
-                    new ExcelExporter().exportTableX(frame, table, file, true);
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        };
+        executeCurrentLineAction = UserAction.create(I18n.getString("ExecuteCurrentLine"), Util.RUN_ICON, "Execute the current line as a query",
+                KeyEvent.VK_ENTER, KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, menuShortcutKeyMask), e -> executeQueryCurrentLine());
 
+        refreshAction = UserAction.create(I18n.getString("Refresh"), Util.REFRESH_ICON, "Refresh the result set",
+                KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuShortcutKeyMask | InputEvent.SHIFT_MASK), e -> refreshQuery());
 
-        executeAction = new UserAction(I18n.getString("Execute"),
-            Util.EXECUTE_ICON,
-            "Execute the full or highlighted text as a query",
-            KeyEvent.VK_E,
-            KeyStroke.getKeyStroke(KeyEvent.VK_E, menuShortcutKeyMask)) {
+        toggleCommaFormatAction = UserAction.create("Toggle Comma Format", Util. COMMA_ICON, "Add/remove thousands separator in selected result",
+                KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_J, menuShortcutKeyMask),
+                e -> {
+                    TabPanel tab = (TabPanel) tabbedPane.getSelectedComponent();
+                    if (tab != null) tab.toggleCommaFormatting();
+                });
 
-            public void actionPerformed(ActionEvent e) {
-                executeQuery();
-            }
-        };
+        aboutAction = UserAction.create(I18n.getString("About"), Util.ABOUT_ICON, "About Studio for kdb+",
+                KeyEvent.VK_E, null, e -> about());
 
+        exitAction = UserAction.create(I18n.getString("Exit"), Util.BLANK_ICON, "Close this window",
+                KeyEvent.VK_X, e -> quit());
 
-        executeCurrentLineAction = new UserAction(I18n.getString("ExecuteCurrentLine"),
-            Util.EXECUTE_LINE_ICON,
-            "Execute the current line as a query",
-            KeyEvent.VK_ENTER,
-            KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, menuShortcutKeyMask)) {
+        settingsAction = UserAction.create("Settings", Util.BLANK_ICON, "Settings",
+                KeyEvent.VK_S, null, e -> settings());
 
-            public void actionPerformed(ActionEvent e) {
-                executeQueryCurrentLine();
-            }
-        };
+        codeKxComAction = UserAction.create("code.kx.com", Util.TEXT_ICON, "Open code.kx.com",
+                KeyEvent.VK_C, null, e -> {
+                    try {
+                        BrowserLaunch.openURL("http://code.kx.com/q/");
+                    } catch (Exception ex) {
+                        StudioOptionPane.showError("Error attempting to launch web browser:\n" + ex.getLocalizedMessage(), "Error");
+                    }
+                });
 
+        copyAction = UserAction.create(I18n.getString("Copy"), Util.COPY_ICON, "Copy the selected text to the clipboard",
+                KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_C,menuShortcutKeyMask), editorCopyAction);
 
-        refreshAction = new UserAction(I18n.getString("Refresh"),
-            Util.REFRESH_ICON,
-            "Refresh the result set",
-            KeyEvent.VK_R,
-            KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuShortcutKeyMask | Event.SHIFT_MASK)) {
+        cutAction = UserAction.create(I18n.getString("Cut"), Util.CUT_ICON, "Cut the selected text",
+                KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_X,menuShortcutKeyMask), editorCutAction);
 
-            public void actionPerformed(ActionEvent e) {
-                refreshQuery();
-            }
-        };
+        pasteAction = UserAction.create(I18n.getString("Paste"), Util.PASTE_ICON, "Paste text from the clipboard",
+                KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V,menuShortcutKeyMask), editorPasteAction);
 
-        aboutAction = new UserAction(I18n.getString("About"),
-            Util.ABOUT_ICON,
-            "About Studio for kdb+",
-            KeyEvent.VK_E,
-            null) {
+        findAction = UserAction.create(I18n.getString("Find"), Util.FIND_ICON, "Find text in the document",
+                KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F,menuShortcutKeyMask), editorFindAction);
 
-            public void actionPerformed(ActionEvent e) {
-                about();
-            }
-        };
+        replaceAction = UserAction.create(I18n.getString("Replace"), Util.REPLACE_ICON, "Replace text in the document",
+                KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_R,menuShortcutKeyMask), editorReplaceAction);
 
-        exitAction = new UserAction(I18n.getString("Exit"),
-            Util.CLOSE_ALL_ICON,
-            "Close all windows",
-            KeyEvent.VK_X,
-            null) {
+        selectAllAction = UserAction.create(I18n.getString("SelectAll"), "Select all text in the document",
+                KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A,menuShortcutKeyMask), editorSelectAllAction);
 
-            public void actionPerformed(ActionEvent e) {
-                if (quit()) {
-                    System.exit(0);
-                }
-            }
-        };
+        undoAction = UserAction.create(I18n.getString("Undo"), Util.UNDO_ICON, "Undo the last change to the document",
+                KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z,menuShortcutKeyMask), editorUndoAction);
 
-        settingsAction = new UserAction("Settings",
-            Util.SETTINGS_ICON,
-            "Settings",
-            KeyEvent.VK_S,
-            null) {
+        redoAction = UserAction.create(I18n.getString("Redo"), Util.REDO_ICON, "Redo the last change to the document",
+                KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y,menuShortcutKeyMask), editorRedoAction);
 
-            public void actionPerformed(ActionEvent e) {
-                settings();
-            }
-        };
+        nextEditorTabAction = UserAction.create("Next tab", Util.BLANK_ICON,
+                "Select next editor tab", KeyEvent.VK_N,
+                    Util.MAC_OS_X ? KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, menuShortcutKeyMask | InputEvent.ALT_MASK ) :
+                                    KeyStroke.getKeyStroke(KeyEvent.VK_TAB, menuShortcutKeyMask),
+                e -> selectNextTab(true));
 
-        codeKxComAction = new UserAction("code.kx.com",
-            Util.CODE_KX_COM_ICON,
-            "Open code.kx.com",
-            KeyEvent.VK_C,
-            null) {
+        prevEditorTabAction = UserAction.create("Previous tab", Util.BLANK_ICON,
+                "Select previous editor tab", KeyEvent.VK_P,
+                Util.MAC_OS_X ? KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, menuShortcutKeyMask | InputEvent.ALT_MASK ) :
+                        KeyStroke.getKeyStroke(KeyEvent.VK_TAB, menuShortcutKeyMask | InputEvent.SHIFT_MASK),
+                e -> selectNextTab(false));
 
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    BrowserLaunch.openURL("https://code.kx.com/q/ref/");
-                } catch (Exception ex) {
-                    StudioOptionPane.showMessageDialog(null,
-                        "Error attempting to launch web browser:\n" + ex.getLocalizedMessage());
-                }
-            }
-        };
+        lineEndingActions = new UserAction[LineEnding.values().length];
+        for(LineEnding lineEnding: LineEnding.values()) {
+            lineEndingActions[lineEnding.ordinal()] = UserAction.create(lineEnding.getDescription(),
+                e -> {
+                    editor.setLineEnding(lineEnding);
+                    refreshActionState();
+                } );
+        }
+
+        wordWrapAction = UserAction.create("Word wrap", Util.BLANK_ICON, "Word wrap for all tabs",
+                KeyEvent.VK_W, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutKeyMask | InputEvent.SHIFT_MASK),
+                e -> toggleWordWrap());
+    }
+
+    private static StudioPanel getActivePanel() {
+        Window window = FocusManager.getCurrentManager().getActiveWindow();
+        for(StudioPanel panel: allPanels) {
+            if (window == panel.frame) return panel;
+        }
+        return null;
     }
 
     public void settings() {
-        SettingsDialog dialog = new SettingsDialog(frame);
+        StudioPanel activePanel = getActivePanel();
+        JFrame ownerFrame = activePanel == null ? frame : activePanel.frame;
+        SettingsDialog dialog = new SettingsDialog(ownerFrame);
         dialog.alignAndShow();
-        if (dialog.getResult() == CANCELLED) {
-            return;
+        if (dialog.getResult() == CANCELLED) return;
+        //@TODO Need rework - we are reading from Config inside SettingDialog; while saving happens outside
+        String auth = dialog.getDefaultAuthenticationMechanism();
+        CONFIG.setDefaultAuthMechanism(auth);
+        CONFIG.setDefaultCredentials(auth, new Credentials(dialog.getUser(), dialog.getPassword()));
+        CONFIG.setShowServerComboBox(dialog.isShowServerComboBox());
+        CONFIG.setResultTabsCount(dialog.getResultTabsCount());
+        CONFIG.setMaxCharsInResult(dialog.getMaxCharsInResult());
+        CONFIG.setMaxCharsInTableCell(dialog.getMaxCharsInTableCell());
+        CONFIG.setDouble(Config.CELL_RIGHT_PADDING, dialog.getCellRightPadding());
+        CONFIG.setInt(Config.CELL_MAX_WIDTH, dialog.getCellMaxWidth());
+        CONFIG.setExecAllOption(dialog.getExecAllOption());
+        CONFIG.setBoolean(Config.SAVE_ON_EXIT, dialog.isSaveOnExit());
+        CONFIG.setBoolean(Config.AUTO_SAVE, dialog.isAutoSave());
+        CONFIG.setEnum(Config.DEFAULT_LINE_ENDING, dialog.getDefaultLineEnding());
+
+        int maxFractionDigits = dialog.getMaxFractionDigits();
+        CONFIG.setInt(Config.MAX_FRACTION_DIGITS, maxFractionDigits);
+        //Looks like a hack??
+        KFormatContext.setMaxFractionDigits(maxFractionDigits);
+
+        boolean changedEditor = CONFIG.setBoolean(Config.RSTA_ANIMATE_BRACKET_MATCHING, dialog.isAnimateBracketMatching());
+        changedEditor |= CONFIG.setBoolean(Config.RSTA_HIGHLIGHT_CURRENT_LINE, dialog.isHighlightCurrentLine());
+        changedEditor |= CONFIG.setBoolean(Config.RSTA_WORD_WRAP, dialog.isWordWrap());
+
+        if (changedEditor) {
+            refreshEditorsSettings();
         }
 
-        String auth = dialog.getDefaultAuthenticationMechanism();
-        Config.getInstance().setDefaultAuthMechanism(auth);
-        Config.getInstance()
-            .setDefaultCredentials(auth, new Credentials(dialog.getUser(), dialog.getPassword()));
-        Config.getInstance().setShowServerComboBox(dialog.isShowServerComboBox());
-        Config.getInstance().setShowConsoleView(dialog.isShowConsoleView());
-        Config.getInstance().setResultTabsCount(dialog.getResultTabsCount());
-        Font font = new Font(dialog.getFontName(), Font.PLAIN, dialog.getFontSize());
-
-        Coloring c = (Coloring) Settings.getValue(BaseKit.class, "line-number-coloring");
-        Coloring c2 = new Coloring(font, null, null);
-        Settings.setValue(BaseKit.class, "line-number-coloring", c2.apply(c));
-        c = (Coloring) Settings.getValue(BaseKit.class, "status-bar-coloring");
-        Settings.setValue(BaseKit.class, "status-bar-coloring", c2.apply(c));
-        c = Utilities.getEditorUI(textArea).getDefaultColoring();
-        Utilities.getEditorUI(textArea).setDefaultColoring(c2.apply(c));
-
-        Config.getInstance().setFont(font);
-        Config.getInstance().setLineEnding(dialog.getLineEnding());
+        boolean changedResult = CONFIG.setInt(Config.EMULATED_DOUBLE_CLICK_TIMEOUT, dialog.getEmulatedDoubleClickTimeout());
+        if (changedResult) {
+            refreshResultSettings();
+        }
 
         String lfClass = dialog.getLookAndFeelClassName();
         if (!lfClass.equals(UIManager.getLookAndFeel().getClass().getName())) {
-            Config.getInstance().setLookAndFeel(lfClass);
-            JOptionPane.showMessageDialog(frame,
-                "Look and Feel was changed. New L&F will take effect on the next start up.",
-                "Look and Feel Setting Changed", JOptionPane.INFORMATION_MESSAGE);
+            CONFIG.setLookAndFeel(lfClass);
+            StudioOptionPane.showMessage(frame, "Look and Feel was changed. " +
+                    "New L&F will take effect on the next start up.", "Look and Feel Setting Changed");
         }
 
         rebuildToolbar();
     }
 
+    private void toggleWordWrap() {
+        boolean value = CONFIG.getBoolean(Config.RSTA_WORD_WRAP);
+        CONFIG.setBoolean(Config.RSTA_WORD_WRAP, !value);
+        refreshEditorsSettings();
+        refreshActionState();
+        rebuildAll();
+    }
+
+    private static void refreshEditorsSettings() {
+        for (StudioPanel panel: allPanels) {
+            int count = panel.tabbedEditors.getTabCount();
+            for (int index=0; index<count; index++) {
+                RSyntaxTextArea editor = panel.getEditor(index).getTextArea();
+                editor.setHighlightCurrentLine(CONFIG.getBoolean(Config.RSTA_HIGHLIGHT_CURRENT_LINE));
+                editor.setAnimateBracketMatching(CONFIG.getBoolean(Config.RSTA_ANIMATE_BRACKET_MATCHING));
+                editor.setLineWrap(CONFIG.getBoolean(Config.RSTA_WORD_WRAP));
+            }
+        }
+    }
+
+    private static void refreshResultSettings() {
+        long doubleClickTimeout = CONFIG.getInt(Config.EMULATED_DOUBLE_CLICK_TIMEOUT);
+        for (StudioPanel panel: allPanels) {
+            int count = panel.tabbedPane.getTabCount();
+            for (int index=0; index<count; index++) {
+                panel.getResultPane(index).setDoubleClickTimeout(doubleClickTimeout);
+            }
+        }
+    }
+
+    public static StudioPanel[] getPanels() {
+        return allPanels.toArray(new StudioPanel[0]);
+    }
+
     public void about() {
         HelpDialog help = new HelpDialog(frame);
-        Util.centerChildOnParent(help, frame);
+        Util.centerChildOnParent(help,frame);
         // help.setTitle("About Studio for kdb+");
         help.pack();
         help.setVisible(true);
     }
 
     public boolean quit() {
-        boolean okToExit = true;
-
-        Object[] objs = windowList.toArray();
-
-        for (int i = 0; i < objs.length; i++) {
-            Object o = objs[i];
-
-            if (o instanceof StudioPanel) {
-                if (!((StudioPanel) o).quitWindow()) {
-                    okToExit = false;
+        WorkspaceSaver.setEnabled(false);
+        try {
+            if (CONFIG.getBoolean(Config.SAVE_ON_EXIT)) {
+                for (StudioPanel panel : allPanels.toArray(new StudioPanel[0])) {
+                    panel.getFrame().toFront();
+                    JTabbedPane tabbedEditors = panel.tabbedEditors;
+                    int selectedTab = tabbedEditors.getSelectedIndex();
+                    try {
+                        int count = tabbedEditors.getTabCount();
+                        for (int index = 0; index < count; index++) {
+                            EditorTab editor = panel.getEditor(index);
+                            if (editor.isModified()) {
+                                tabbedEditors.setSelectedIndex(index);
+                                if (!checkAndSaveTab(editor)) {
+                                    return false;
+                                }
+                            }
+                        }
+                    } finally {
+                        tabbedEditors.setSelectedIndex(selectedTab);
+                    }
                 }
-            } else if (o instanceof JFrame) {
-                JFrame f = (JFrame) o;
-                f.setVisible(false);
-
-                f.dispose();
             }
+        } finally {
+            frame.toFront();
+            WorkspaceSaver.setEnabled(true);
         }
-
-        return okToExit;
+        WorkspaceSaver.save(getWorkspace());
+        log.info("Shutting down");
+        System.exit(0);
+        return true;
     }
 
-    public boolean quitWindow() {
-        if (getModified()) {
-            int choice = StudioOptionPane.showOptionDialog(frame,
-                "Changes not saved.\nSave now?",
-                "Save changes?",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                Util.QUESTION_ICON,
-                null, // use standard button titles
-                null);      // no default selection
+    private boolean closePanel() {
+        // If this is the last window, we need to properly persist workspace
+        if (allPanels.size() == 1) return quit();
 
-            if (choice == 0) {
-                try {
-                    String filename = (String) textArea.getDocument().getProperty("filename");
-                    if (!saveFile(filename, false))
-                    // was cancelled so return
-                    {
-                        return false;
-                    }
-                } catch (Exception e) {
-                    return false;
-                }
-            } else if ((choice == 2) || (choice == JOptionPane.CLOSED_OPTION)) {
-                return false;
-            }
+        while (tabbedEditors.getTabCount() > 0) {
+            if (! closeTab()) return false;
         }
+        //closing the last tab would dispose the frame
+        return true;
+    }
 
-        windowList.remove(this);
-        windowListMonitor.removeEventListener(windowListChangedEventListener);
-        windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
-        frame.dispose();
+    private boolean checkAndSaveTab(EditorTab editor) {
+        if (! editor.isModified()) return true;
+
+        int choice = StudioOptionPane.showYesNoCancelDialog(editor.getPane(),
+                editor.getTitle() + " is changed. Save changes?","Save changes?");
+
+        if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) return false;
+
+        if (choice == JOptionPane.YES_OPTION) {
+            return saveEditor(editor);
+        }
 
         return true;
     }
 
+    private void closeFrame() {
+        frame.dispose();
+        allPanels.remove(this);
+        rebuildAll();
+    }
+
+    private void closeIfEmpty() {
+        if (tabbedEditors.getTabCount()>0) return;
+        closeFrame();
+    }
+
+    private boolean closeTab() {
+        if (!checkAndSaveTab(editor)) return false;
+
+        getEditor(tabbedEditors.getSelectedIndex()).stopFileWatching();
+
+        if (tabbedEditors.getTabCount() == 1 && allPanels.size() == 1) {
+            WorkspaceSaver.save(getWorkspace());
+            log.info("Closed the last tab. Shutting down");
+            System.exit(0);
+            return true;
+        }
+
+        tabbedEditors.remove(tabbedEditors.getSelectedIndex());
+        closeIfEmpty();
+        return true;
+    }
+
+    public static void rebuildAll() {
+        for (StudioPanel panel: allPanels) {
+            panel.rebuildMenuAndTooblar();
+        }
+    }
+
+    private void rebuildMenuAndTooblar() {
+        rebuildMenuBar();
+        rebuildToolbar();
+    }
+
     private void rebuildMenuBar() {
-        menubar = createMenuBar();
-        SwingUtilities.invokeLater(
-            () -> {
-                if (frame != null) {
-                    frame.setJMenuBar(menubar);
-                    menubar.validate();
-                    menubar.repaint();
-                    frame.validate();
-                    frame.repaint();
-                }
-            });
+        if (loading) return;
+
+        JMenuBar menubar = createMenuBar();
+        frame.setJMenuBar(menubar);
+        menubar.validate();
+        menubar.repaint();
+        frame.validate();
+        frame.repaint();
     }
 
     private JMenuBar createMenuBar() {
         JMenuBar menubar = new JMenuBar();
         JMenu menu = new JMenu(I18n.getString("File"));
         menu.setMnemonic(KeyEvent.VK_F);
-        menu.add(new JMenuItem(newFileAction));
+        menu.add(new JMenuItem(newWindowAction));
+        menu.add(new JMenuItem(newTabAction));
         menu.add(new JMenuItem(openFileAction));
         menu.add(new JMenuItem(saveFileAction));
         menu.add(new JMenuItem(saveAsFileAction));
+        menu.add(new JMenuItem(saveAllFilesAction));
 
+        menu.add(new JMenuItem(closeTabAction));
         menu.add(new JMenuItem(closeFileAction));
 
-        if (!Util.MAC_OS_X) {
+        if (! Util.MAC_OS_X) {
             menu.add(new JMenuItem(settingsAction));
         }
         menu.addSeparator();
@@ -1625,25 +1138,29 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         menu.addSeparator();
         menu.add(new JMenuItem(chartAction));
 
-        String[] mru = Config.getInstance().getMRUFiles();
+        String[] mru = CONFIG.getMRUFiles();
 
         if (mru.length > 0) {
             menu.addSeparator();
             char[] mnems = "123456789".toCharArray();
 
-            for (int i = 0; i < (mru.length > mnems.length ? mnems.length : mru.length); i++) {
+            for (int i = 0;i < (mru.length > mnems.length ? mnems.length : mru.length);i++) {
                 final String filename = mru[i];
 
                 JMenuItem item = new JMenuItem("" + (i + 1) + " " + filename);
                 item.setMnemonic(mnems[i]);
-                //item.setIcon(Util.BLANK_ICON);
-                item.addActionListener(e -> loadMRUFile(filename,
-                    (String) textArea.getDocument().getProperty("filename")));
+                item.setIcon(Util.BLANK_ICON);
+                item.addActionListener(new ActionListener() {
+
+                    public void actionPerformed(ActionEvent e) {
+                        loadMRUFile(filename);
+                    }
+                });
                 menu.add(item);
             }
         }
 
-        if (!Util.MAC_OS_X) {
+        if (! Util.MAC_OS_X) {
             menu.addSeparator();
             menu.add(new JMenuItem(exitAction));
         }
@@ -1658,6 +1175,17 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         menu.add(new JMenuItem(copyAction));
         menu.add(new JMenuItem(pasteAction));
         menu.addSeparator();
+
+        menu.add(new JCheckBoxMenuItem(wordWrapAction));
+
+        JMenu lineEndingSubMenu = new JMenu("Line Ending");
+        lineEndingSubMenu.setIcon(Util.BLANK_ICON);
+        for (Action action: lineEndingActions) {
+            lineEndingSubMenu.add(new JCheckBoxMenuItem(action));
+        }
+        menu.add(lineEndingSubMenu);
+
+        menu.add(new JMenuItem(cleanAction));
         menu.add(new JMenuItem(selectAllAction));
         menu.addSeparator();
         menu.add(new JMenuItem(findAction));
@@ -1672,17 +1200,16 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         menu.add(new JMenuItem(editServerAction));
         menu.add(new JMenuItem(removeServerAction));
 
-        Server[] servers = Config.getInstance().getServers();
+        Server server = editor.getServer();
+        Server[] servers = CONFIG.getServers();
         if (servers.length > 0) {
             JMenu subMenu = new JMenu(I18n.getString("Clone"));
-            subMenu.setIcon(Util.SERVER_CLONE_ICON);
+            subMenu.setIcon(Util.DATA_COPY_ICON);
 
             int count = MAX_SERVERS_TO_CLONE;
-            for (int i = 0; i < servers.length; i++) {
+            for (int i = 0;i < servers.length;i++) {
                 final Server s = servers[i];
-                if (!s.equals(server) && count <= 0) {
-                    continue;
-                }
+                if (!s.equals(server) && count <= 0) continue;
                 count--;
                 JMenuItem item = new JMenuItem(s.getFullName());
                 item.addActionListener(new ActionListener() {
@@ -1691,16 +1218,16 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
                         Server clone = new Server(s);
                         clone.setName("Clone of " + clone.getName());
 
-                        EditServerForm f = new EditServerForm(frame, clone);
+                        EditServerForm f = new EditServerForm(frame,clone);
                         f.alignAndShow();
 
                         if (f.getResult() == ACCEPTED) {
                             clone = f.getServer();
-                            Config.getInstance().addServer(clone);
+                            CONFIG.addServer(clone);
                             //ebuildToolbar();
                             setServer(clone);
                             ConnectionPool.getInstance().purge(clone); //?
-                            windowListMonitor.fireMyEvent(new WindowListChangedEvent(this));
+                            rebuildAll();
                         }
                     }
                 });
@@ -1711,6 +1238,11 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             menu.add(subMenu);
         }
 
+        menu.addSeparator();
+        menu.add(new JMenuItem(serverListAction));
+        menu.add(new JMenuItem(serverHistoryAction));
+        menu.add(new JMenuItem(importFromQPadAction));
+
         menubar.add(menu);
 
         menu = new JMenu(I18n.getString("Query"));
@@ -1719,6 +1251,7 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         menu.add(new JMenuItem(executeAction));
         menu.add(new JMenuItem(stopAction));
         menu.add(new JMenuItem(refreshAction));
+        menu.add(new JMenuItem(toggleCommaFormatAction));
         menubar.add(menu);
 
         menu = new JMenu(I18n.getString("Window"));
@@ -1726,53 +1259,39 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
 
         menu.add(new JMenuItem(minMaxDividerAction));
         menu.add(new JMenuItem(toggleDividerOrientationAction));
-        menu.add(new JMenuItem(openFileInNewWindowAction));
         menu.add(new JMenuItem(arrangeAllAction));
-        menu.add(new JMenuItem(serverListAction));
+        menu.add(new JMenuItem(nextEditorTabAction));
+        menu.add(new JMenuItem(prevEditorTabAction));
 
-        if (windowList.size() > 0) {
+        if (allPanels.size() > 0) {
             menu.addSeparator();
 
             int i = 0;
-            Iterator it = windowList.iterator();
-
-            while (it.hasNext()) {
+            for (StudioPanel panel: allPanels) {
+                EditorTab editor = panel.editor;
                 String t = "unknown";
+                String filename = editor.getFilename();
 
-                final Object o = it.next();
+                if (filename != null)
+                    t = filename.replace('\\','/');
 
-                if (o instanceof StudioPanel) {
-                    StudioPanel r = (StudioPanel) o;
-                    String filename = (String) r.textArea.getDocument().getProperty("filename");
-
-                    if (filename != null) {
-                        t = filename.replace('\\', '/');
-                    }
-
-                    if (r.server != null) {
-                        t = t + "[" + r.server.getFullName() + "]";
-                    } else {
-                        t = t + "[no server]";
-                    }
-                } else if (o instanceof JFrame) {
-                    t = ((JFrame) o).getTitle();
-                }
+                if (editor.getServer() != null)
+                    t = t + "[" + editor.getServer().getFullName() + "]";
+                else
+                    t = t + "[no server]";
 
                 JMenuItem item = new JMenuItem("" + (i + 1) + " " + t);
-                item.addActionListener(e -> {
-                    if (o instanceof StudioPanel) {
-                        JFrame f = ((StudioPanel) o).frame;
-                        ensureDeiconified(f);
-                    } else {
-                        ensureDeiconified((JFrame) o);
+                item.addActionListener(new ActionListener() {
+
+                    public void actionPerformed(ActionEvent e) {
+                        ensureDeiconified(panel.frame);
                     }
                 });
 
-                if (o == this) {
+                if (panel == this)
                     item.setIcon(Util.CHECK_ICON);
-                } else {
+                else
                     item.setIcon(Util.BLANK_ICON);
-                }
 
                 menu.add(item);
                 i++;
@@ -1782,9 +1301,8 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         menu = new JMenu(I18n.getString("Help"));
         menu.setMnemonic(KeyEvent.VK_H);
         menu.add(new JMenuItem(codeKxComAction));
-        if (!Util.MAC_OS_X) {
+        if (! Util.MAC_OS_X)
             menu.add(new JMenuItem(aboutAction));
-        }
         menubar.add(menu);
 
         return menubar;
@@ -1799,15 +1317,12 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
 
     private void selectConnectionString() {
         String connection = txtServer.getText().trim();
-        if (connection.length() == 0) {
-            return;
-        }
-        if (server != null && server.getConnectionString(false).equals(connection)) {
-            return;
-        }
+        if (connection.length() == 0) return;
+        Server server = editor.getServer();
+        if (server != null && server.getConnectionString().equals(connection)) return;
 
         try {
-            setServer(Config.getInstance().getServerByConnectionString(connection));
+            setServer(CONFIG.getServerByConnectionString(connection));
 
             rebuildToolbar();
             toolbar.validate();
@@ -1817,33 +1332,53 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         }
     }
 
-    private void selectServerName() {
-        if (comboServer.getSelectedItem() == null) {
-            return;
+    private void showServerList(boolean selectHistory) {
+        if (serverList == null) {
+            serverList = new ServerList(frame);
         }
-        String selection = comboServer.getSelectedItem().toString();
-        if (!Config.getInstance().getServerNames().contains(selection)) {
-            return;
-        }
+        Rectangle bounds = Config.getInstance().getBounds(Config.SERVER_LIST_BOUNDS);
+        serverList.setBounds(bounds);
 
-        setServer(Config.getInstance().getServer(selection));
+        serverList.updateServerTree(CONFIG.getServerTree(), editor.getServer());
+        serverList.updateServerHistory(serverHistory);
+        serverList.selectHistoryTab(selectHistory);
+        serverList.setVisible(true);
+
+        bounds = serverList.getBounds();
+        CONFIG.setBounds(Config.SERVER_LIST_BOUNDS, bounds);
+
+        Server selectedServer = serverList.getSelectedServer();
+        if (selectedServer == null || selectedServer.equals(editor.getServer())) return;
+
+        setServer(selectedServer);
+        rebuildToolbar();
+    }
+
+
+    private void selectServerName() {
+        String selection = comboServer.getSelectedItem().toString();
+        if(! CONFIG.getServerNames().contains(selection)) return;
+
+        setServer(CONFIG.getServer(selection));
         rebuildToolbar();
         toolbar.validate();
         toolbar.repaint();
     }
 
     private void refreshConnection() {
+        Server server = editor.getServer();
         if (server == null) {
             txtServer.setText("");
             txtServer.setToolTipText("Select connection details");
         } else {
-            txtServer.setText(server.getConnectionString(false));
-            txtServer.setToolTipText(server.getConnectionString(true));
+            txtServer.setText(server.getConnectionString());
+            txtServer.setToolTipText(server.getConnectionStringWithPwd());
         }
     }
 
     private void toolbarAddServerSelection() {
-        Collection<String> names = Config.getInstance().getServerNames();
+        Server server = editor.getServer();
+        Collection<String> names = CONFIG.getServerNames();
         String name = server == null ? "" : server.getFullName();
         if (!names.contains(name)) {
             List<String> newNames = new ArrayList<>();
@@ -1854,13 +1389,16 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         comboServer = new JComboBox<>(names.toArray(new String[0]));
         comboServer.setToolTipText("Select the server context");
         comboServer.setSelectedItem(name);
-        comboServer.addActionListener(e -> selectServerName());
+        comboServer.addActionListener(e->selectServerName());
         // Cut the width if it is too wide.
         comboServer.setMinimumSize(new Dimension(0, 0));
-        comboServer.setVisible(Config.getInstance().isShowServerComboBox());
+        comboServer.setVisible(CONFIG.isShowServerComboBox());
 
         txtServer = new JTextField(32);
-        txtServer.addActionListener(e -> selectConnectionString());
+        txtServer.addActionListener(e -> {
+            selectConnectionString();
+            editor.getTextArea().requestFocus();
+        });
         txtServer.addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(FocusEvent e) {
@@ -1876,31 +1414,12 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
         toolbar.addSeparator();
     }
 
-    public void updateServerComboBox() {
-        comboServer.removeAllItems();
-        for (String name : Config.getInstance().getServerNames()) {
-            comboServer.addItem(name);
-        }
-    }
-
     private void rebuildToolbar() {
+        if (loading) return;
+
         if (toolbar != null) {
             toolbar.removeAll();
             toolbarAddServerSelection();
-            if (server == null) {
-                addServerAction.setEnabled(true);
-                editServerAction.setEnabled(false);
-                removeServerAction.setEnabled(false);
-                stopAction.setEnabled(false);
-                executeAction.setEnabled(false);
-                executeCurrentLineAction.setEnabled(false);
-                refreshAction.setEnabled(false);
-            } else {
-                executeAction.setEnabled(true);
-                executeCurrentLineAction.setEnabled(true);
-                editServerAction.setEnabled(true);
-                removeServerAction.setEnabled(true);
-            }
 
             toolbar.add(stopAction);
             toolbar.add(executeAction);
@@ -1911,7 +1430,6 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             toolbar.add(saveFileAction);
             toolbar.add(saveAsFileAction);
             toolbar.addSeparator();
-//            toolbar.add(importAction);
             toolbar.add(openInExcel);
             toolbar.addSeparator();
             toolbar.add(exportAction);
@@ -1920,8 +1438,8 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             toolbar.add(chartAction);
             toolbar.addSeparator();
 
-            toolbar.add(undoAction).setName("undo");
-            toolbar.add(redoAction).setName("redo");
+            toolbar.add(undoAction);
+            toolbar.add(redoAction);
             toolbar.addSeparator();
 
             toolbar.add(cutAction);
@@ -1932,105 +1450,49 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             toolbar.add(findAction);
 
             toolbar.add(replaceAction);
-
             toolbar.addSeparator();
             toolbar.add(codeKxComAction);
 
-            for (int j = 0; j < toolbar.getComponentCount(); j++) {
+            for (int j = 0;j < toolbar.getComponentCount();j++) {
                 Component c = toolbar.getComponentAtIndex(j);
 
                 if (c instanceof JButton) {
-                    ((JButton) c).setRequestFocusEnabled(false);
+                    JButton btn = (JButton)c;
+                    btn.setRequestFocusEnabled(false);
+                    btn.setMnemonic(KeyEvent.VK_UNDEFINED);
                 }
             }
+            refreshActionState();
         }
     }
-
-    private JToolBar createToolbar() {
-        toolbar = new JToolBar();
-        toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.X_AXIS));
-        toolbar.setFloatable(false);
-        rebuildToolbar();
-        return toolbar;
-    }
-
-    private static class Impl extends FileView implements
-        LocaleSupport.Localizer {
-        // FileView implementation
-
-        public String getName(File f) {
-            return null;
-        }
-
-
-        public String getDescription(File f) {
-            return null;
-        }
-
-
-        public String getTypeDescription(File f) {
-            return null;
-        }
-
-
-        public Boolean isTraversable(File f) {
-            return null;
-        }
-
-
-        public Icon getIcon(File f) {
-            if (f.isDirectory()) {
-                return null;
-            }
-            //     KitInfo ki = KitInfo.getKitInfoForFile(f);
-            //   return ki == null ? null : ki.getIcon();
-            return null;
-        }
-
-        private final ResourceBundle bundle;
-
-        public Impl(String bundleName) {
-            bundle = ResourceBundle.getBundle(bundleName);
-        }
-        // Localizer
-
-        public String getString(String key) {
-            return bundle.getString(key);
-        }
-    }
-
-    private final WindowListChangedEventListener windowListChangedEventListener;
 
     private int dividerLastPosition; // updated from property change listener
-
-    private void minMaxDivider() {
+    private void minMaxDivider(){
         //BasicSplitPaneDivider divider = ((BasicSplitPaneUI)splitpane.getUI()).getDivider();
         //((JButton)divider.getComponent(0)).doClick();
         //((JButton)divider.getComponent(1)).doClick();
-        if (splitpane.getDividerLocation() >= splitpane.getMaximumDividerLocation()) {
+        if(splitpane.getDividerLocation()>=splitpane.getMaximumDividerLocation()){
             // Minimize editor pane
             splitpane.getTopComponent().setMinimumSize(new Dimension());
             splitpane.getBottomComponent().setMinimumSize(null);
             splitpane.setDividerLocation(0.);
             splitpane.setResizeWeight(0.);
-        } else if (splitpane.getDividerLocation() <= splitpane.getMinimumDividerLocation()) {
+        }
+        else if(splitpane.getDividerLocation()<=splitpane.getMinimumDividerLocation()){
             // Restore editor pane
             splitpane.getTopComponent().setMinimumSize(null);
             splitpane.getBottomComponent().setMinimumSize(null);
             splitpane.setResizeWeight(0.);
             // Could probably catch resize edge-cases etc in pce too
-            if (dividerLastPosition >= splitpane.getMaximumDividerLocation() ||
-                dividerLastPosition <= splitpane.getMinimumDividerLocation()) {
-                dividerLastPosition = splitpane.getMaximumDividerLocation() / 2;
-            }
+            if(dividerLastPosition>=splitpane.getMaximumDividerLocation()||dividerLastPosition<=splitpane.getMinimumDividerLocation())
+                dividerLastPosition=splitpane.getMaximumDividerLocation()/2;
             splitpane.setDividerLocation(dividerLastPosition);
-        } else {
+        }
+        else{
             // Maximize editor pane
             splitpane.getBottomComponent().setMinimumSize(new Dimension());
             splitpane.getTopComponent().setMinimumSize(null);
-            splitpane.setDividerLocation(splitpane.getOrientation() == VERTICAL_SPLIT ?
-                splitpane.getHeight() - splitpane.getDividerSize() :
-                splitpane.getWidth() - splitpane.getDividerSize());
+            splitpane.setDividerLocation(splitpane.getOrientation()==VERTICAL_SPLIT?splitpane.getHeight()-splitpane.getDividerSize():splitpane.getWidth()-splitpane.getDividerSize());
             splitpane.setResizeWeight(1.);
         }
     }
@@ -2038,61 +1500,118 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
     private void toggleDividerOrientation() {
         if (splitpane.getOrientation() == JSplitPane.VERTICAL_SPLIT) {
             splitpane.setOrientation(JSplitPane.HORIZONTAL_SPLIT);
+            tabbedPane.setTabPlacement(JTabbedPane.LEFT);
         } else {
             splitpane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+            tabbedPane.setTabPlacement(JTabbedPane.TOP);
+        }
+
+        int count = tabbedPane.getTabCount();
+        for (int index = 0; index<count; index++) {
+            ((TabPanel)tabbedPane.getComponent(index)).updateToolbarLocation(tabbedPane);
         }
 
         splitpane.setDividerLocation(0.5);
     }
 
-    public StudioPanel(Server server, String filename, String hostport) {
+    private void selectNextTab(boolean forward) {
+        int index = tabbedEditors.getSelectedIndex();
+        int count = tabbedEditors.getTabCount();
+        if (forward) {
+            index++;
+            if (index == count) index = 0;
+        } else {
+            index--;
+            if (index == -1) index = count-1;
+        }
+        tabbedEditors.setSelectedIndex(index);
+    }
 
+    public EditorTab addTab(Server server, String filename) {
+        editor = new EditorTab(this);
+        JComponent editorPane = editor.getPane();
+        JTextComponent textArea = editor.getTextArea();
+        removeFocusChangeKeysForWindows(textArea);
+
+        overrideDefaultKeymap(textArea, toggleCommaFormatAction, newTabAction, closeTabAction, nextEditorTabAction, prevEditorTabAction);
+        editorPane.putClientProperty(EditorTab.class, editor);
+        tabbedEditors.add(editorPane);
+        tabbedEditors.setSelectedIndex(tabbedEditors.getTabCount()-1);
+        setServer(server);
+
+        if (filename != null) {
+            loadFile(filename);
+        } else {
+            editor.setFilename(null);
+            editor.init(Content.getEmpty());
+        }
+        textArea.getDocument().addDocumentListener(new MarkingDocumentListener(editor));
+        textArea.requestFocus();
+        refreshActionState();
+        return editor;
+    }
+
+    private void refreshEditor() {
+        if ( tabbedEditors.getSelectedIndex() == -1) return;
+        editor = getEditor(tabbedEditors.getSelectedIndex());
+        editor.setPanel(this);
+        setServer(editor.getServer());
+        lastQuery = null;
+        refreshTitle();
+        refreshActionState();
+    }
+
+    private void resultTabDragged(DragEvent event) {
+        DraggableTabbedPane targetPane = event.getTargetPane();
+        StudioPanel targetPanel = (StudioPanel) targetPane.getClientProperty(StudioPanel.class);
+        ((TabPanel)targetPane.getComponentAt(event.getTargetIndex())).setPanel(targetPanel);
+    }
+
+    public StudioPanel() {
         registerForMacOSXEvents();
-
-        windowListChangedEventListener = evt -> {
-            rebuildMenuBar();
-            rebuildToolbar();
-        };
-
-        windowListMonitor.addEventListener(windowListChangedEventListener);
+        initActions();
+        serverHistory = new HistoricalList<>(CONFIG.getServerHistoryDepth(),
+                CONFIG.getServerHistory());
 
         splitpane = new JSplitPane();
         frame = new JFrame();
-        windowList.add(this);
+        allPanels.add(this);
 
-        initDocument();
-        if (hostport == null) {
-            setServer(server);
-        }
-
-        menubar = createMenuBar();
-        toolbar = createToolbar();
-
-        if (hostport != null) {
-            txtServer.setText(hostport);
-            selectConnectionString();
-        }
-
-        tabbedPane = new JTabbedPane();
-
-        Arrays.stream(tabbedPane.getMouseListeners()).forEach(tabbedPane::removeMouseListener);
-        tabbedPane.addMouseListener(new MouseAdapter() {
-
+        tabbedEditors = new DraggableTabbedPane("Editor");
+        removeFocusChangeKeysForWindows(tabbedEditors);
+        ClosableTabbedPane.makeCloseable(tabbedEditors, index -> {
+            tabbedEditors.setSelectedIndex(index);
+            return closeTab();
+        });
+        tabbedEditors.addChangeListener(e -> refreshEditor() );
+        tabbedEditors.addContainerListener(new ContainerListener() {
             @Override
-            public void mousePressed(MouseEvent e) {
-                int tabIndex = tabbedPane.getUI().tabForCoordinate(tabbedPane, e.getX(), e.getY());
-                if (tabIndex >= 0) {
-                    if (SwingUtilities.isLeftMouseButton(e)) {
-                        tabbedPane.setSelectedIndex(tabIndex);
-                    } else if (SwingUtilities.isRightMouseButton(e)) {
-                        JPopupMenu popup = createJPopupMenu(tabIndex);
-                        popup.show(e.getComponent(), e.getX(), e.getY());
-                    } else if (SwingUtilities.isMiddleMouseButton(e)) {
-                        tabbedPane.removeTabAt(tabIndex);
-                    }
-                }
+            public void componentAdded(ContainerEvent e) {
+                refreshEditor();
+            }
+            @Override
+            public void componentRemoved(ContainerEvent e) {
+                refreshEditor();
             }
         });
+        tabbedEditors.addDragCompleteListener(success -> closeIfEmpty() );
+        splitpane.setTopComponent(tabbedEditors);
+        splitpane.setDividerLocation(0.5);
+
+        toolbar = new JToolBar();
+        toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.X_AXIS));
+        toolbar.setFloatable(false);
+
+
+        tabbedPane = new DraggableTabbedPane("Result", JTabbedPane.TOP);
+        ClosableTabbedPane.makeCloseable(tabbedPane, index -> {
+            tabbedPane.removeTabAt(index);
+            return true;
+        });
+        tabbedPane.addChangeListener(e->refreshActionState());
+        tabbedPane.putClientProperty(StudioPanel.class, this);
+        tabbedPane.addDragListener( evt -> resultTabDragged(evt));
+
         splitpane.setBottomComponent(tabbedPane);
         splitpane.setOneTouchExpandable(true);
         splitpane.setOrientation(JSplitPane.VERTICAL_SPLIT);
@@ -2102,235 +1621,192 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             divider.addMouseListener(new MouseAdapter() {
 
                 public void mouseClicked(MouseEvent event) {
-                    if (event.getClickCount() == 2) {
+                    if (event.getClickCount() == 2)
                         toggleDividerOrientation();
-                    }
                 }
             });
-        } catch (ClassCastException e) {
+        }
+        catch (ClassCastException e) {
         }
         splitpane.setContinuousLayout(true);
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-        frame.setJMenuBar(menubar);
+//        rebuildMenuAndTooblar();
 
-        if (filename != null) {
-            loadFile(filename);
-        } else {
-            myScriptNumber = scriptNumber++;
-        }
-
-        refreshFrameTitle();
-
-        frame.getContentPane().add(toolbar, BorderLayout.NORTH);
-        frame.getContentPane().add(splitpane, BorderLayout.CENTER);
+        frame.getContentPane().add(toolbar,BorderLayout.NORTH);
+        frame.getContentPane().add(splitpane,BorderLayout.CENTER);
         // frame.setSize(frame.getContentPane().getPreferredSize());
 
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(this);
         frame.setSize((int) (0.8 * screenSize.width),
-            (int) (0.8 * screenSize.height));
+                (int) (0.8 * screenSize.height));
 
-        frame.setLocation(((int) Math.max(0, (screenSize.width - frame.getWidth()) / 2.0)),
-            (int) (Math.max(0, (screenSize.height - frame.getHeight()) / 2.0)));
+        frame.setLocation(((int) Math.max(0,(screenSize.width - frame.getWidth()) / 2.0)),
+                (int) (Math.max(0,(screenSize.height - frame.getHeight()) / 2.0)));
 
-        if (Util.LOGO_ICON != null) {
-            frame.setIconImage(Util.LOGO_ICON.getImage());
-        }
+        frame.setIconImage(Util.LOGO_ICON.getImage());
 
         //     frame.pack();
         frame.setVisible(true);
         splitpane.setDividerLocation(0.5);
 
-        textArea.requestFocus();
-        splitpane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY,
-            pce -> {
-                String s =
-                    splitpane.getDividerLocation() >= splitpane.getMaximumDividerLocation() ?
-                        I18n.getString("MinimizeEditorPane") : splitpane.getDividerLocation() <=
-                        splitpane.getMinimumDividerLocation() ?
-                        I18n.getString("RestoreEditorPane") :
-                        I18n.getString("MaximizeEditorPane");
-                minMaxDividerAction.putValue(Action.SHORT_DESCRIPTION, s);
-                minMaxDividerAction.putValue(Action.NAME, s);
-                if (splitpane.getDividerLocation() < splitpane.getMaximumDividerLocation() &&
-                    splitpane.getDividerLocation() > splitpane.getMinimumDividerLocation()) {
-                    dividerLastPosition = splitpane.getDividerLocation();
-                }
-            });
-        dividerLastPosition = splitpane.getDividerLocation();
-    }
-
-    private JPopupMenu createJPopupMenu(int index) {
-        JPopupMenu popup = new JPopupMenu();
-        JMenuItem close = new JMenuItem("Close");
-        close.addActionListener(e -> tabbedPane.removeTabAt(index));
-
-        JMenuItem closeOthers = new JMenuItem("Close others");
-        closeOthers.addActionListener(e -> {
-            Component selected = tabbedPane.getComponentAt(index);
-            if (selected != null) {
-                String title = tabbedPane.getTitleAt(index);
-                Icon icon = tabbedPane.getIconAt(index);
-                tabbedPane.setComponentAt(index, null);
-                tabbedPane.setComponentAt(0, selected);
-                tabbedPane.setTitleAt(0, title);
-                tabbedPane.setIconAt(0, icon);
-
-                while (tabbedPane.getTabCount() > 1) {
-                    tabbedPane.removeTabAt(1);
-                }
-
-                tabbedPane.setSelectedIndex(0);
+        splitpane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY,new PropertyChangeListener(){
+            public void propertyChange(PropertyChangeEvent pce){
+                String s=splitpane.getDividerLocation()>=splitpane.getMaximumDividerLocation()?I18n.getString("MinimizeEditorPane"):splitpane.getDividerLocation()<=splitpane.getMinimumDividerLocation()?I18n.getString("RestoreEditorPane"):I18n.getString("MaximizeEditorPane");
+                minMaxDividerAction.putValue(Action.SHORT_DESCRIPTION,s);
+                minMaxDividerAction.putValue(Action.NAME,s);
+                if(splitpane.getDividerLocation()<splitpane.getMaximumDividerLocation()&&splitpane.getDividerLocation()>splitpane.getMinimumDividerLocation())
+                    dividerLastPosition=splitpane.getDividerLocation();
             }
         });
-        JMenuItem closeAll = new JMenuItem("Close all");
-        closeAll.addActionListener(e -> tabbedPane.removeAll());
-
-        popup.add(close);
-        popup.add(closeOthers);
-        popup.add(closeAll);
-
-        return popup;
+        dividerLastPosition=splitpane.getDividerLocation();
     }
 
-    public void update(Observable obs, Object obj) {
+    public void update(Observable obs,Object obj) {
     }
-
     private static boolean registeredForMaxOSXEvents = false;
 
     public void registerForMacOSXEvents() {
-        if (registeredForMaxOSXEvents) {
+        if (registeredForMaxOSXEvents)
             return;
-        }
 
-        if (Util.MAC_OS_X) {
+        if (Util.MAC_OS_X)
             try {
                 // Generate and register the OSXAdapter, passing it a hash of all the methods we wish to
                 // use as delegates for various com.apple.eawt.ApplicationListener methods
-                OSXAdapter.setQuitHandler(this,
-                    StudioPanel.class.getDeclaredMethod("quit", (Class[]) null));
-                OSXAdapter.setAboutHandler(this,
-                    StudioPanel.class.getDeclaredMethod("about", (Class[]) null));
-                OSXAdapter.setPreferencesHandler(this,
-                    StudioPanel.class.getDeclaredMethod("settings", (Class[]) null));
+                OSXAdapter.setQuitHandler(this, StudioPanel.class.getDeclaredMethod("quit"));
+                OSXAdapter.setAboutHandler(this, StudioPanel.class.getDeclaredMethod("about"));
+                OSXAdapter.setPreferencesHandler(this, StudioPanel.class.getDeclaredMethod("settings"));
                 registeredForMaxOSXEvents = true;
-            } catch (Exception e) {
-                System.err.println("Error while loading the OSXAdapter:");
-                e.printStackTrace();
             }
-        }
+            catch (Exception e) {
+                log.error("Failed to set MacOS handlers", e);
+            }
     }
 
-    public static StudioPanel init(String[] args) {
-        try {
-            Locale.setDefault(new Locale("en", "US"));    //without this, decimals may be displayed with commas rather than dots
-            studio.ui.I18n.setLocale(Locale.getDefault());
-            String filename = null;
-            String hostport = null;
-
-            String[] mruFiles = Config.getInstance().getMRUFiles();
-            for (int i=0; i<args.length; ++i) {
-                if (args[i].startsWith("-")) {
-                    if (args[i].equals("-hostport")) {
-                        ++i;
-                        if (i<args.length) {
-                            hostport = args[i];
-                        }
-                    }
-                } else {
-                    File f = new File(args[i]);
-                    if (f.exists()) {
-                        filename = args[i];
-                    }
-                }
-            }
-            if (filename == null && mruFiles.length > 0) {
-                File f = new File(mruFiles[0]);
-                if (f.exists()) {
-                    filename = mruFiles[0];
-                }
-            }
-
-            Locale.setDefault(Locale.US);
-
-            Server s = null;
-            String lruServer = Config.getInstance().getLRUServer();
-            if (Config.getInstance().getServerNames().contains(lruServer)) {
-                s = Config.getInstance().getServer(lruServer);
-            }
-            return new StudioPanel(s, filename, hostport);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private static Server getServer(Workspace.Tab tab) {
+        Server server = null;
+        String serverFullname = tab.getServerFullName();
+        if (serverFullname != null) {
+            server = CONFIG.getServer(serverFullname);
         }
-        return null;
+        if (server != null) return server;
+
+        String connectionString = tab.getServerConnection();
+        if (connectionString != null) {
+            server = CONFIG.getServerByConnectionString(connectionString);
+        }
+        if (server == null) server = new Server();
+
+        String auth = tab.getServerAuth();
+        if (auth == null) return server;
+
+        if (AuthenticationManager.getInstance().lookup(auth) != null) {
+            server.setAuthenticationMechanism(auth);
+        }
+        return server;
+    }
+
+    public static void loadWorkspace(Workspace workspace) {
+        loading = true;
+        for (Workspace.Window window: workspace.getWindows()) {
+            Workspace.Tab[] tabs = window.getTabs();
+            if (tabs.length == 0) {
+                log.info("Strange: a window has zero tabs. Skipping initialization");
+                continue;
+            }
+
+            StudioPanel panel = new StudioPanel();
+            for (Workspace.Tab tab: tabs) {
+                try {
+                    EditorTab editor = panel.addTab(getServer(tab), tab.getFilename());
+                    editor.init(Content.newContent(tab.getContent(), tab.getLineEnding()));
+                    editor.setModified(tab.isModified());
+                    int caretPosition = tab.getCaret();
+                    if (caretPosition >= 0 && caretPosition < editor.getTextArea().getDocument().getLength()) {
+                        editor.getTextArea().setCaretPosition(caretPosition);
+                    }
+                    editor.getTextArea().discardAllEdits();
+                } catch (RuntimeException e) {
+                    log.error("Failed to init tab with filename {}", tab.getFilename(), e);
+                }
+            }
+            if (window.getSelectedTab() != -1) {
+                panel.tabbedEditors.setSelectedIndex(window.getSelectedTab());
+            }
+        }
+
+        if (workspace.getSelectedWindow() != -1) {
+            allPanels.get(workspace.getSelectedWindow()).frame.toFront();
+        }
+
+        loading = false;
+        for (StudioPanel panel: allPanels) {
+            panel.refreshTitle();
+        }
+        rebuildAll();
     }
 
     public void refreshQuery() {
-        table = null;
         executeK4Query(lastQuery);
     }
 
     public void executeQueryCurrentLine() {
-        executeQuery(getCurrentLineEditorText(textArea));
+        executeQuery(getCurrentLineEditorText(editor.getTextArea()));
     }
 
     public void executeQuery() {
-        executeQuery(getEditorText(textArea));
+        executeQuery(getEditorText(editor.getTextArea()));
     }
 
     private void executeQuery(String text) {
-        table = null;
-
         if (text == null) {
-            StudioOptionPane.showMessageDialog(frame,
-                "\nNo text available to submit to server.\n\n",
-                "Studio for kdb+",
-                JOptionPane.OK_OPTION,
-                Util.INFORMATION_ICON);
-
+            return;
+        }
+        text = text.trim();
+        if (text.length() == 0) {
+            log.info("Nothing to execute - got empty string");
             return;
         }
 
-        refreshAction.setEnabled(false);
-        stopAction.setEnabled(true);
-        executeAction.setEnabled(false);
-        executeCurrentLineAction.setEnabled(false);
-        exportAction.setEnabled(false);
-        chartAction.setEnabled(false);
-        openInExcel.setEnabled(false);
-
         executeK4Query(text);
-
         lastQuery = text;
     }
 
-    private String getEditorText(JEditorPane editor) {
-        String text = editor.getSelectedText();
-
-        if (text != null) {
-            if (text.length() > 0) {
-                if (text.trim().length() == 0) {
-                    return null; // selected text is whitespace
-                }
-            }
-        } else {
-            text = editor.getText(); // get the full text then
-        }
-
-        if (text != null) {
-            text = text.trim();
-        }
-
-        if (text.trim().length() == 0) {
-            text = null;
-        }
-
-        return text;
+    public JFrame getFrame() {
+        return frame;
     }
 
-    private String getCurrentLineEditorText(JEditorPane editor) {
+    public Server getServer() {
+        return editor.getServer();
+    }
+
+    private String getEditorText(JTextComponent editor) {
+        String text = editor.getSelectedText();
+        if (text != null) return text;
+
+        Config.ExecAllOption option = CONFIG.getExecAllOption();
+        if (option == Config.ExecAllOption.Ignore) {
+            log.info("Nothing is selected. Ignore execution of the whole script");
+            return null;
+        }
+        if (option == Config.ExecAllOption.Execute) {
+            return editor.getText();
+        }
+        //Ask
+        int result = StudioOptionPane.showYesNoDialog(frame, "Nothing is selected. Execute the whole script?",
+                "Execute All?");
+
+        if (result == JOptionPane.YES_OPTION ) {
+            return editor.getText();
+        }
+
+        return null;
+    }
+
+    private String getCurrentLineEditorText(JTextComponent editor) {
         String newLine = "\n";
         String text = null;
 
@@ -2339,267 +1815,134 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
             int max = editor.getDocument().getLength();
 
 
-            if ((max > pos) && (!editor.getText(pos, 1).equals("\n"))) {
-                String toeol = editor.getText(pos, max - pos);
+            if ((max > pos) && (!editor.getText(pos,1).equals("\n"))) {
+                String toeol = editor.getText(pos,max - pos);
                 int eol = toeol.indexOf('\n');
 
-                if (eol > 0) {
+                if (eol > 0)
                     pos = pos + eol;
-                } else {
+                else
                     pos = max;
-                }
             }
 
-            text = editor.getText(0, pos);
+            text = editor.getText(0,pos);
 
             int lrPos = text.lastIndexOf(newLine);
 
             if (lrPos >= 0) {
                 lrPos += newLine.length(); // found it so skip it
-                text = text.substring(lrPos, pos).trim();
+                text = text.substring(lrPos,pos).trim();
             }
-        } catch (BadLocationException e) {
+        }
+        catch (BadLocationException e) {
         }
 
         if (text != null) {
             text = text.trim();
 
-            if (text.length() == 0) {
+            if (text.length() == 0)
                 text = null;
-            }
         }
 
         return text;
     }
 
-    private void processK4Results(K.KBase r) {
-        if (r != null) {
-            short tabAdded = 0;
-            exportAction.setEnabled(true);
-            KTableModel model = KTableModel.getModel(r);
-            chartAction.setEnabled(false);
-            openInExcel.setEnabled(false);
-            if (model != null) {
-                boolean dictModel = model instanceof DictModel;
-                boolean listModel = model instanceof ListModel;
-                boolean tableModel = !(dictModel || listModel);
-                QGrid grid = new QGrid(model);
-                table = grid.getTable();
-                openInExcel.setEnabled(true);
-                chartAction.setEnabled(tableModel);
-                String title = tableModel ? "Table" : (dictModel ? "Dict" : "List");
-                TabPanel frame = new TabPanel(title + " [" + grid.getRowCount() + " rows] ",
-                    Util.TABLE_ICON,
-                    grid);
-//                frame.setTitle(I18n.getString("Table")+" [" + grid.getRowCount() + " "+I18n.getString("rows")+"] ");
-                tabbedPane.addTab(frame.getTitle(), frame.getIcon(), frame.getComponent());
-                ++tabAdded;
-            }
+    private JTable getSelectedTable() {
+        TabPanel tab = (TabPanel) tabbedPane.getSelectedComponent();
+        if (tab == null) return null;
+        return tab.getTable();
+    }
 
-            if (model == null || Config.getInstance().isShowConsoleView()) {
-                LimitedWriter lm = new LimitedWriter(50000);
-                try {
-                    if (!(r instanceof K.UnaryPrimitive &&
-                        0 == ((K.UnaryPrimitive) r).getPrimitiveAsInt())) {
-                        r.toString(lm, true);
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                } catch (LimitedWriter.LimitException ex) {
-                }
+    private void executeK4Query(String text) {
+        editor.getTextArea().setCursor(waitCursor);
+        editor.setStatus("Executing: " + text);
+        editor.getQueryExecutor().execute(text);
+        refreshActionState();
+    }
 
-                JEditorPane pane = new JEditorPane("text/q", lm.toString());
-                pane.setEditable(false);
-                //not setting a font results in exception e.g. on a string like "\331\203"
-                pane.setFont(Config.getInstance().getFont());
+    void executeK4Query(K.KBase query) {
+        editor.getTextArea().setCursor(waitCursor);
+        editor.setStatus("Executing: " + query.toString());
+        editor.getQueryExecutor().execute(query);
+        refreshActionState();
+    }
 
-                JScrollPane scrollpane = new JScrollPane(pane,
-                    ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    private EditorTab getEditor(int index) {
+        return (EditorTab) ((JComponent) tabbedEditors.getComponentAt(index)).getClientProperty(EditorTab.class);
+    }
 
-                TabPanel frame = new TabPanel("Console View ",
-                    Util.CONSOLE_ICON,
-                    scrollpane);
+    private TabPanel getResultPane(int index) {
+        return (TabPanel)tabbedPane.getComponentAt(index);
+    }
 
-                frame.setTitle(I18n.getString("ConsoleView"));
+    // if the query is cancelled execTime=-1, result and error are null's
+    public static void queryExecutionComplete(EditorTab editor, QueryResult queryResult) {
+        JTextComponent textArea = editor.getTextArea();
+        textArea.setCursor(textCursor);
 
-                tabbedPane.addTab(frame.getTitle(), frame.getIcon(), frame.getComponent());
-                ++tabAdded;
-            }
-
-            tabbedPane.setSelectedIndex(
-                tabbedPane.getTabCount() - tabAdded); // 2 is to give focus on "table" view
+        Throwable error = queryResult.getError();
+        if (queryResult.isComplete()) {
+            long execTime = queryResult.getExecutionTime();
+            editor.setStatus("Last execution time: " + (execTime > 0 ? "" + execTime : "<1") + " mS");
         } else {
-            // Log that execute was successful
-        }
-    }
-
-    Server server = null;
-
-    public void executeK4Query(final String text) {
-        final Cursor cursor = textArea.getCursor();
-
-        textArea.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
-
-        while (tabbedPane.getTabCount() >= Config.getInstance().getResultTabsCount()) {
-            tabbedPane.remove(0);
+            editor.setStatus("Last query was cancelled");
         }
 
-        worker = new SwingWorker() {
-            Server s = null;
-            c c = null;
-            K.KBase r = null;
-            Throwable exception;
-            boolean cancelled = false;
-            long execTime = 0;
-
-            public void interrupt() {
-                super.interrupt();
-
-                cancelled = true;
-
-                if (c != null) {
-                    c.close();
-                }
-                cleanup();
+        StudioPanel panel = editor.getPanel();
+        if (error != null && ! (error instanceof c.K4Exception)) {
+            String message = error.getMessage();
+            if ((message == null) || (message.length() == 0))
+                message = "No message with exception. Exception is " + error;
+            StudioOptionPane.showError(editor.getPane(),
+                    "\nAn unexpected error occurred whilst communicating with " +
+                            editor.getServer().getConnectionString() +
+                            "\n\nError detail is\n\n" + message + "\n\n",
+                    "Studio for kdb+");
+        } else if (queryResult.isComplete()) {
+            JTabbedPane tabbedPane = panel.tabbedPane;
+            TabPanel tab = new TabPanel(panel, queryResult);
+            if(tabbedPane.getTabCount()>= CONFIG.getResultTabsCount()) {
+                tabbedPane.remove(0);
             }
-
-            public Object construct() {
-                try {
-                    this.s = server;
-                    c = ConnectionPool.getInstance().leaseConnection(s);
-                    if (c == null) {
-                        throw new RuntimeException("Not connected to server");
-                    }
-                    ConnectionPool.getInstance().checkConnected(c);
-                    c.setFrame(frame);
-                    long startTime = System.currentTimeMillis();
-                    c.k(new K.KCharacterVector(text));
-                    r = c.getResponse();
-                    execTime = System.currentTimeMillis() - startTime;
-                } catch (Throwable e) {
-                    System.err.println("Error occurred during query execution: " + e);
-                    e.printStackTrace(System.err);
-                    exception = e;
-                }
-
-                return null;
-            }
-
-            public void finished() {
-                if (!cancelled) {
-                    if (exception != null) {
-                        try {
-                            throw exception;
-                        } catch (IOException ex) {
-                            StudioOptionPane.showMessageDialog(frame,
-                                "\nA communications error occurred whilst sending the query.\n\nPlease check that the server is running on " +
-                                    server.getHost() + ":" + server.getPort() +
-                                    "\n\nError detail is\n\n" + ex.getMessage() + "\n\n",
-                                "Studio for kdb+",
-                                JOptionPane.ERROR_MESSAGE,
-                                Util.ERROR_ICON);
-                        } catch (c.K4Exception ex) {
-                            JTextPane pane = new JTextPane();
-                            String hint = QErrors.lookup(ex.getMessage());
-                            if (hint != null) {
-                                hint = "\nStudio Hint: Possibly this error refers to " + hint;
-                            } else {
-                                hint = "";
-                            }
-                            pane.setText(
-                                "An error occurred during execution of the query.\nThe server sent the response:\n" +
-                                    ex.getMessage() + hint);
-                            pane.setForeground(Color.RED);
-
-                            JScrollPane scrollpane = new JScrollPane(pane);
-
-                            TabPanel frame = new TabPanel("Error Details ",
-                                Util.ERROR_SMALL_ICON,
-                                scrollpane);
-                            frame.setTitle("Error Details ");
-
-                            tabbedPane
-                                .addTab(frame.getTitle(), frame.getIcon(), frame.getComponent());
-                            tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
-                        } catch (java.lang.OutOfMemoryError ex) {
-                            StudioOptionPane.showMessageDialog(frame,
-                                "\nOut of memory whilst communicating with " + server.getHost() +
-                                    ":" + server.getPort() +
-                                    "\n\nThe result set is probably too large.\n\nTry increasing the memory available to studio through the command line option -J -Xmx512m\n\n",
-                                "Studio for kdb+",
-                                JOptionPane.ERROR_MESSAGE,
-                                Util.ERROR_ICON);
-                        } catch (Throwable ex) {
-                            String message = ex.getMessage();
-
-                            if ((message == null) || (message.length() == 0)) {
-                                message =
-                                    "No message with exception. Exception is " + ex;
-                            }
-
-                            StudioOptionPane.showMessageDialog(frame,
-                                "\nAn unexpected error occurred whilst communicating with " +
-                                    server.getHost() + ":" + server.getPort() +
-                                    "\n\nError detail is\n\n" + message + "\n\n",
-                                "Studio for kdb+",
-                                JOptionPane.ERROR_MESSAGE,
-                                Util.ERROR_ICON);
-                        }
-                    } else {
-                        try {
-                            Utilities.setStatusText(textArea,
-                                "Last execution time:" + (execTime > 0 ? "" + execTime : "<1") +
-                                    " mS");
-                            processK4Results(r);
-                        } catch (Exception e) {
-                            StudioOptionPane.showMessageDialog(frame,
-                                "\nAn unexpected error occurred while processing results from " +
-                                    server.getHost() + ":" + server.getPort() +
-                                    "\n\nError detail is\n\n" + e.getMessage() + "\n\n"
-                                    + Util.extractStackTrace(e),
-                                "Studio for kdb+",
-                                JOptionPane.ERROR_MESSAGE,
-                                Util.ERROR_ICON);
-                        }
-                    }
-
-                    cleanup();
-                }
-            }
-
-            private void cleanup() {
-                if (c != null) {
-                    ConnectionPool.getInstance().freeConnection(s, c);
-                }
-                //if( c != null)
-                //    c.close();
-                c = null;
-
-                textArea.setCursor(cursor);
-
-                stopAction.setEnabled(false);
-                executeAction.setEnabled(true);
-                executeCurrentLineAction.setEnabled(true);
-                refreshAction.setEnabled(true);
-
-                System.gc();
-
-                worker = null;
-            }
-        };
-
-        worker.start();
+            tab.addInto(tabbedPane);
+            tab.setToolTipText(editor.getServer().getConnectionString());
+        }
+        panel.refreshActionState();
     }
 
-    private SwingWorker worker;
+    public static Workspace getWorkspace() {
+        Workspace workspace = new Workspace();
+        Window activeWindow = KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
+
+        for (StudioPanel panel : allPanels) {
+            Workspace.Window window = workspace.addWindow(panel.getFrame() == activeWindow);
+
+            int count = panel.tabbedEditors.getTabCount();
+            for (int index = 0; index < count; index++) {
+                EditorTab editor = panel.getEditor(index);
+                Server server = editor.getServer();
+                String filename = editor.getFilename();
+                boolean modified = editor.isModified();
+                if (modified && CONFIG.getBoolean(Config.AUTO_SAVE)) {
+                    editor.saveFileOnDisk(true);
+                }
+                JTextComponent textArea = editor.getTextArea();
+
+                window.addTab(index == panel.tabbedEditors.getSelectedIndex())
+                        .addFilename(filename)
+                        .addServer(server)
+                        .addContent(textArea.getText())
+                        .setCaret(textArea.getCaretPosition())
+                        .setModified(modified)
+                        .setLineEnding(editor.getLineEnding());
+            }
+
+        }
+        return workspace;
+    }
 
     public void windowClosing(WindowEvent e) {
-        if (quitWindow()) {
-            if (windowList.size() == 0) {
-                System.exit(0);
-            }
-        }
+        closePanel();
     }
 
 
@@ -2629,53 +1972,20 @@ public class StudioPanel extends JPanel implements Observer, WindowListener {
     }
 
     private class MarkingDocumentListener implements DocumentListener {
-        private boolean modified = false;
-
-        private void setModified(boolean b) {
-            modified = b;
+        private final EditorTab editor;
+        public MarkingDocumentListener(EditorTab editor) {
+            this.editor = editor;
         }
-
-        private boolean getModified() {
-            return modified;
+        private void update() {
+            editor.setModified(true);
+            refreshActionState();
         }
-
-        public MarkingDocumentListener(Component comp) {
-        }
-
-        private void markChanged(DocumentEvent evt) {
-            setModified(true);
-            refreshFrameTitle();
-        }
-
-
-        public void changedUpdate(DocumentEvent e) {
-        }
-
-
+        public void changedUpdate(DocumentEvent evt) { update(); }
         public void insertUpdate(DocumentEvent evt) {
-            markChanged(evt);
+            update();
         }
-
-
         public void removeUpdate(DocumentEvent evt) {
-            markChanged(evt);
+            update();
         }
-
-        /**
-         * Document property holding String name of associated file
-         */
-        private static final String FILE = "file";
-        /**
-         * Document property holding Boolean if document was created or opened
-         */
-        private static final String CREATED = "created";
-        /**
-         * Document property holding Boolean modified information
-         */
-        private static final String MODIFIED = "modified";
-    }
-
-    public JFrame frame() {
-        return frame;
     }
 }

@@ -3,11 +3,11 @@ package studio.core;
 import java.util.Properties;
 
 public interface IAuthenticationMechanism {
-    String getMechanismName();
+    public String getMechanismName();
 
-    String[] getMechanismPropertyNames();
+    public String[] getMechanismPropertyNames();
 
-    void setProperties(Properties props);
+    public void setProperties(Properties props);
 
-    Credentials getCredentials();
+    public Credentials getCredentials();
 }

@@ -1,9 +1,10 @@
 package studio.kdb;
 
+import studio.core.Credentials;
+
 import java.awt.Color;
 import java.util.Objects;
 import java.util.Properties;
-import studio.core.Credentials;
 
 public class Server {
     private String authenticationMechanism;
@@ -65,25 +66,22 @@ public class Server {
 
     public Server() {
         authenticationMechanism = Config.getInstance().getDefaultAuthMechanism();
-        Credentials credentials =
-            Config.getInstance().getDefaultCredentials(authenticationMechanism);
+        Credentials credentials = Config.getInstance().getDefaultCredentials(authenticationMechanism);
         username = credentials.getUsername();
         password = credentials.getPassword();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof Server)) {
-            return false;
-        }
+        if (!(obj instanceof Server)) return false;
         Server s = (Server) obj;
         return s.name.equals(name)
-            && Objects.equals(s.host, host)
-            && s.port == port
-            && Objects.equals(s.username, username)
-            && Objects.equals(s.password, password)
-            && Objects.equals(s.authenticationMechanism, authenticationMechanism)
-            && s.useTLS == useTLS;
+                && Objects.equals(s.host, host)
+                && s.port == port
+                && Objects.equals(s.username, username)
+                && Objects.equals(s.password, password)
+                && Objects.equals(s.authenticationMechanism ,authenticationMechanism)
+                && s.useTLS == useTLS;
     }
 
     @Override
@@ -100,10 +98,10 @@ public class Server {
         this.backgroundColor = s.backgroundColor;
         this.authenticationMechanism = s.authenticationMechanism;
         this.useTLS = s.useTLS;
+        this.setFolder(s.getFolder());
     }
 
-    public Server(String name, String host, int port, String username, String password,
-                  Color backgroundColor, String authenticationMechanism, boolean useTLS) {
+    public Server(String name, String host, int port, String username, String password, Color backgroundColor, String authenticationMechanism, boolean useTLS) {
         this.name = name;
         this.host = host;
         this.port = port;
@@ -131,13 +129,9 @@ public class Server {
     }
 
     public String getFullName() {
-        if (folder == null) {
-            return name;
-        }
+        if (folder == null) return name;
         String path = folder.fullPath();
-        if (path.length() == 0) {
-            return name;
-        }
+        if (path.length() == 0) return name;
         return path + "/" + name;
     }
 
@@ -153,22 +147,24 @@ public class Server {
         return getFullName();
     }
 
-    public String getConnectionString(boolean includeCreditional) {
-        String connection = "`:" + host + ":" + port;
-        if (!includeCreditional) {
-            return connection;
-        }
+    public String getConnectionString() {
+        return "`:" + host + ":" + port;
+    }
 
-        return connection + ":" + username + ":" + password;
-
+    public String getConnectionStringWithPwd() {
+        return "`:" + host + ":" + port + ":" + username + ":" + password;
     }
 
     public String getDescription(boolean fullName) {
-        return (fullName ? getFullName() : name) + " (" + host + ":" + port + ")";
+        String serverName = fullName ? getFullName() : name;
+        String connection = host + ":" + port;
+        if (serverName.equals("")) return connection;
+
+        return serverName + " (" + connection + ")";
     }
 
-    public boolean getUseTLS() {
-        return useTLS;
+    public boolean getUseTLS(){
+      return useTLS;
     }
 
     public ServerTreeNode getFolder() {

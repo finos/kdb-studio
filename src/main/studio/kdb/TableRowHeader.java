@@ -6,6 +6,7 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import javax.swing.AbstractListModel;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JTable;
@@ -109,7 +110,8 @@ public class TableRowHeader extends JList {
         }
 
         public Object getElementAt(int index) {
-            return String.valueOf(index);
+            int value = ((KTableModel)table.getModel()).getIndex()[index];
+            return String.valueOf(value);
         }
     }
 
@@ -119,7 +121,10 @@ public class TableRowHeader extends JList {
             setHorizontalAlignment(RIGHT);
             setVerticalAlignment(CENTER);
             setOpaque(true);
-            setBorder(UIManager.getBorder("TableHeader.cellBorder"));
+            setBorder(BorderFactory.createCompoundBorder(
+                        UIManager.getBorder("TableHeader.cellBorder"),
+                        BorderFactory.createEmptyBorder(0,0,0,5)
+                      ));
             //setFont(UIManager.getFont("Table.font"));
             setFont(table.getFont());
             setBackground(UIManager.getColor("TableHeader.background"));

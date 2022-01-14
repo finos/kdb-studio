@@ -1,44 +1,51 @@
 package studio.kdb;
 
 public class DictTableModel extends KTableModel {
-    private K.Dict dict;
+    private final K.Dict dict;
+
+    private final boolean keyFlip;
+    private final boolean valueFlip;
+    private final int keyCount;
+    private final int valueCount;
 
     public DictTableModel(K.Dict obj) {
+        super(obj.count());
         this.dict = obj;
+        keyFlip = dict.x instanceof K.Flip;
+        valueFlip = dict.y instanceof K.Flip;
+        keyCount = keyFlip ? ((K.Flip)dict.x).x.getLength() : 1;
+        valueCount = valueFlip ? ((K.Flip)dict.y).x.getLength() : 1;
     }
 
     public boolean isKey(int column) {
-        K.Flip f = (K.Flip) dict.x;
-
-        if (column < f.x.getLength()) {
-            return true;
-        }
-        return false;
+        return column < keyCount;
     }
 
     public int getColumnCount() {
-        return ((K.Flip) dict.x).x.getLength() + ((K.Flip) dict.y).x.getLength();
+        return keyCount + valueCount;
     }
 
     public String getColumnName(int col) {
-        K.KSymbolVector v = ((K.Flip) dict.x).x;
+        boolean keyColumn = col < keyCount;
+        K.KBase obj = keyColumn ? dict.x : dict.y;
+        int index = keyColumn ? col : col - keyCount;
 
-        if (col >= ((K.Flip) dict.x).x.getLength()) {
-            col -= ((K.Flip) dict.x).x.getLength();
-            v = ((K.Flip) dict.y).x;
+        if (obj instanceof K.Flip) {
+            K.KSymbolVector v = ((K.Flip) obj).x;
+            return v.at(index).s;
+        } else { //list
+            return keyColumn ? "key" : "value";
         }
-        return v.at(col).toString(false);
     }
 
-    public K.KBaseVector getColumn(int col) {
-        K.Flip f = (K.Flip) dict.x;
-        K.KBaseVector v = null;
-
-        if (col >= f.x.getLength()) {
-            col -= f.x.getLength();
-            f = (K.Flip) dict.y;
+    public K.KBaseVector<? extends K.KBase> getColumn(int col) {
+        boolean keyColumn = col < keyCount;
+        K.KBase obj = keyColumn ? dict.x : dict.y;
+        int index = keyColumn ? col : col - keyCount;
+        if (obj instanceof K.Flip) {
+            return (K.KBaseVector<? extends K.KBase>) ((K.Flip)obj).y.at(index);
+        } else { //list
+            return (K.KBaseVector<? extends K.KBase>)obj;
         }
-
-        return (K.KBaseVector) f.y.at(col);
     }
 };

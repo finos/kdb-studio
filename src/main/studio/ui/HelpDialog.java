@@ -1,77 +1,58 @@
 package studio.ui;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Point;
+import studio.kdb.Config;
+import studio.kdb.Lm;
+import studio.utils.BrowserLaunch;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.InputMap;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JEditorPane;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JRootPane;
-import javax.swing.KeyStroke;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-import studio.kdb.Lm;
-import studio.utils.BrowserLaunch;
 
 public class HelpDialog extends JDialog {
     public HelpDialog(JFrame parent) {
         super(parent, "Studio for kdb+");
-        SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd");
-        f.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String env = Config.getEnvironment();
         final JEditorPane jep = new JEditorPane("text/html",
-            "<html><head><title>Studio for kdb+</title></head><body><h1>Studio for kdb+</h1>"
-                + "<br>Version: " + Lm.getVersionString()
-                + "<br>Build date: " + f.format(Lm.buildDate)
-                + "<br>JVM Version: " + System.getProperty("java.version")
-                +
-                "<br>License: <a href=\"http://github.com/CharlesSkelton/studio/blob/master/license.md\">Apache 2</a>"
-                +
-                "<br>N.B. Some components have their own license terms, see this project on github for details."
-                +
-                "<br>Source available from <a href=\"http://github.com/CharlesSkelton/studio\">Github</a>"
-                + "<br>Contributions and corrections welcome."
-                + "</body></html>");
+                "<html><head><title>Studio for kdb+</title></head><body><h1>Studio for kdb+</h1>"
+                        + "<p>"
+                        + (env == null ? "" : "Environment: " + env + "<br>")
+                        + "Version: " + Lm.version + " (" + Lm.date + ")"
+                        + "<br>Build date: " + Lm.build
+                        + "<br>JVM Version: " + System.getProperty("java.version")
+                        + "</p><p>License: <a href=\"http://github.com/CharlesSkelton/studio/blob/master/license.md\">Apache 2</a>"
+                        + "<br>N.B. Some components have their own license terms, see this project on github for details."
+                        + "<br>Source available from <a href=\"http://github.com/dzmipt/kdbStudio\">Github</a>"
+                        + "<br>The repository was forked from <a href=\"http://github.com/CharlesSkelton/studio\">Github</a>"
+                        + "<br>Contributions and corrections welcome."
+                        + "<h1>Notes</h1>"
+                        + Lm.notes
+                        + "</p></body></html>");
         jep.setEditable(false);
         jep.setOpaque(true);
         jep.addHyperlinkListener(new HyperlinkListener() {
             @Override
             public void hyperlinkUpdate(HyperlinkEvent hle) {
-                if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+                if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType()))
                     BrowserLaunch.openURL(hle.getURL().toString());
-                }
             }
         });
-        getContentPane().add(jep);
+        jep.setBorder(BorderFactory.createEmptyBorder(10,20,10,20));
+        jep.setCaretPosition(0);
+        getContentPane().add(new JScrollPane(jep));
         JPanel buttonPane = new JPanel();
         JButton button = new JButton("Close");
         buttonPane.add(button);
         button.addActionListener(new CloseActionListener());
         getContentPane().add(buttonPane, BorderLayout.PAGE_END);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setPreferredSize(new Dimension(800,450));
         pack();
         setVisible(true);
-    }
-
-    public void setStartLocation(Component parent) {
-        Point parentlocation = parent.getLocation();
-        Dimension oursize = getPreferredSize();
-        Dimension parentsize = parent.getSize();
-        int x = parentlocation.x + (parentsize.width - oursize.width) / 2;
-        int y = parentlocation.y + (parentsize.height - oursize.height) / 2;
-        x = Math.max(0, x);
-        y = Math.max(0, y);
-        setLocation(x, y);
     }
 
     @Override

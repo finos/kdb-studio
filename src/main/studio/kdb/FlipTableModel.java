@@ -2,9 +2,10 @@ package studio.kdb;
 
 public class FlipTableModel extends KTableModel {
 
-    private K.Flip flip;
+    private final K.Flip flip;
 
     public FlipTableModel(K.Flip obj) {
+        super(obj.count());
         flip = obj;
     }
 
@@ -17,10 +18,10 @@ public class FlipTableModel extends KTableModel {
     }
 
     public String getColumnName(int i) {
-        return flip.x.at(i).toString(false);
+        return flip.x.at(i).s;
     }
 
-    public K.KBaseVector getColumn(int col) {
-        return (K.KBaseVector) flip.y.at(col);
+    public K.KBaseVector<? extends K.KBase> getColumn(int col) {
+        return (K.KBaseVector<? extends K.KBase>) flip.y.at(col);
     }
 };

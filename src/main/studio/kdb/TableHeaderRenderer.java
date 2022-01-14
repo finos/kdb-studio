@@ -1,28 +1,28 @@
 package studio.kdb;
 
-import java.awt.Component;
-import java.awt.Font;
-import java.awt.Insets;
-import javax.swing.Icon;
-import javax.swing.JTable;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
 import javax.swing.border.Border;
+
+import studio.ui.SorterDrawer;
+
+import java.awt.*;
+import javax.swing.*;
+
 import javax.swing.table.DefaultTableCellRenderer;
-import studio.ui.BlankIcon;
-import studio.ui.ScaledIcon;
-import studio.ui.Util;
 
 public class TableHeaderRenderer extends DefaultTableCellRenderer {
+
     public TableHeaderRenderer() {
         super();
-        setHorizontalAlignment(SwingConstants.RIGHT);
+        setHorizontalAlignment(SwingConstants.LEFT);
         setVerticalAlignment(SwingConstants.CENTER);
         setOpaque(true);
-        final Border border = UIManager.getBorder("TableHeader.cellBorder");
-        if (border != null) {
-            setBorder(border);
+        Border border = UIManager.getBorder("TableHeader.cellBorder");
+        if (border == null) {
+            border = BorderFactory.createMatteBorder(0, 0, 2, 1, Color.BLACK);
         }
+        // add gap for sorter icon
+        setBorder(BorderFactory.createCompoundBorder(border, BorderFactory.createEmptyBorder(5,2,1,0)));
+
         setFont(UIManager.getFont("TableHeader.font"));
         setBackground(UIManager.getColor("TableHeader.background"));
         setForeground(UIManager.getColor("TableHeader.foreground"));
@@ -32,6 +32,9 @@ public class TableHeaderRenderer extends DefaultTableCellRenderer {
         super.setFont(f);
         invalidate();
     }
+
+    private boolean asc = false;
+    private boolean desc = false;
 
     public Component getTableCellRendererComponent(JTable table,
                                                    Object value,
@@ -43,43 +46,29 @@ public class TableHeaderRenderer extends DefaultTableCellRenderer {
 
         if (table.getModel() instanceof KTableModel) {
             column = table.convertColumnIndexToModel(column);
-            Icon icon = null;
-
-            Insets insets = getInsets();
-            int targetHeight = getFontMetrics(getFont()).getHeight() - insets.bottom - insets.top;
             KTableModel ktm = (KTableModel) table.getModel();
-            if (ktm.isSortedDesc()) {
-                if (column == ktm.getSortByColumn()) {
-                    if (ktm.getColumnClass(column) == K.KSymbolVector.class) {
-                        icon = new ScaledIcon(Util.SORT_AZ_ASC_ICON, targetHeight);
-                    } else {
-                        icon = new ScaledIcon(Util.SORT_DESC_ICON, targetHeight);
-                    }
-                }
-            } else if (ktm.isSortedAsc()) {
-                if (column == ktm.getSortByColumn()) {
-                    if (ktm.getColumnClass(column) == K.KSymbolVector.class) {
-                        icon = new ScaledIcon(Util.SORT_AZ_DESC_ICON, targetHeight);
-                    } else {
-                        icon = new ScaledIcon(Util.SORT_ASC_ICON, targetHeight);
-                    }
-                }
-            }
-            if (icon != null) {
-                setIcon(icon);
+            if (ktm.isSortedAsc(column)) {
+                asc = true;
+                desc = false;
+            } else if (ktm.isSortedDesc(column)) {
+                asc = false;
+                desc = true;
             } else {
-                icon = new ScaledIcon(Util.SORT_ASC_ICON, targetHeight);
-                setIcon(new BlankIcon(icon));
+                asc = false;
+                desc = false;
             }
         }
 
-        String text = " ";
-        if (value != null) {
-            text = value.toString() + " ";
-        }
-
-        setText(text);
+        setText(value == null ? " " : value.toString());
 
         return this;
+    }
+
+    @Override
+    public void paint(Graphics g) {
+        int width = SwingUtilities.computeStringWidth(getFontMetrics(getFont()), getText());
+        int availableWidth = Math.min(getInsets().left + width, getSize().width);
+        SorterDrawer.paint(asc, desc, this, availableWidth, g);
+        super.paint(g);
     }
 }

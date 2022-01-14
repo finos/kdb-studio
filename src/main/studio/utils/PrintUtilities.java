@@ -1,53 +1,51 @@
 package studio.utils;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.print.PageFormat;
-import java.awt.print.Printable;
-import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
-import javax.swing.RepaintManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.awt.*;
+import javax.swing.*;
+import java.awt.print.*;
 
 public class PrintUtilities implements Printable {
-    private Component componentToBePrinted;
 
+    private static final Logger log = LogManager.getLogger();
+    private Component componentToBePrinted;
+    
     public static void printComponent(Component c) {
         new PrintUtilities(c).print();
     }
-
+    
     public PrintUtilities(Component componentToBePrinted) {
         this.componentToBePrinted = componentToBePrinted;
     }
-
+    
     public void print() {
         PrinterJob printJob = PrinterJob.getPrinterJob();
         printJob.setPrintable(this);
-        if (printJob.printDialog()) {
+        if(printJob.printDialog())
             try {
                 printJob.print();
             } catch (PrinterException pe) {
-                System.err.println("Printing error: " + pe);
-            }
+                log.error("Printing error", pe);
         }
     }
-
+    
     public int print(Graphics g, PageFormat pf, int pageIndex) {
         int response = NO_SUCH_PAGE;
-
+        
         Graphics2D g2 = (Graphics2D) g;
-        disableDoubleBuffering(componentToBePrinted);
+        disableDoubleBuffering(componentToBePrinted);        
         Dimension d = componentToBePrinted.getSize();
-        double panelWidth = d.width;
+        double panelWidth  = d.width; 
         double panelHeight = d.height;
         double pageHeight = pf.getImageableHeight();
-        double pageWidth = pf.getImageableWidth();
+        double pageWidth  = pf.getImageableWidth();
         double scale = pageWidth / panelWidth;
         int totalNumPages = (int) Math.ceil(scale * panelHeight / pageHeight);
         if (pageIndex >= totalNumPages) {
             response = NO_SUCH_PAGE;
-        } else {
+        } else {            
             g2.translate(pf.getImageableX(), pf.getImageableY());
             g2.translate(0f, -pageIndex * pageHeight);
             g2.scale(scale, scale);
@@ -57,12 +55,12 @@ public class PrintUtilities implements Printable {
         }
         return response;
     }
-
+    
     public static void disableDoubleBuffering(Component c) {
         RepaintManager currentManager = RepaintManager.currentManager(c);
         currentManager.setDoubleBufferingEnabled(false);
     }
-
+    
     public static void enableDoubleBuffering(Component c) {
         RepaintManager currentManager = RepaintManager.currentManager(c);
         currentManager.setDoubleBufferingEnabled(true);

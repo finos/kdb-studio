@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn">
+    <Properties>
+        <!-- Reference to the folder with Config properties - see Config class  -->
+        <Property name="baseFolder">${sys:user.home}/.studioforkdb${sys:log4j.studio.envSuffix:-}/log</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy.MM.dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+        <RollingFile name="StudioLog" fileName="${baseFolder}/studio.log"
+                     filePattern="${baseFolder}/studio-%i.log"
+                     createOnDemand="true">
+            <PatternLayout pattern="%d{yyyy.MM.dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <SizeBasedTriggeringPolicy size="10 MB"/>
+            <DefaultRolloverStrategy max="10" fileIndex="min"/>
+        </RollingFile>
+        <Async name="AsyncStudioLog">
+            <AppenderRef ref="StudioLog"/>
+        </Async>
+        <RollingFile name="QueryLog" fileName="${baseFolder}/query.log"
+                     filePattern="${baseFolder}/query-%i.log"
+                     createOnDemand="true">
+            <PatternLayout pattern="%d{yyyy.MM.dd HH:mm:ss.SSS} %msg%n"/>
+            <SizeBasedTriggeringPolicy size="10 MB"/>
+            <DefaultRolloverStrategy max="10" fileIndex="min"/>
+        </RollingFile>
+
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncStudioLog"/>
+        </Root>
+        <Logger name="Query" level="info" additivity="false">
+            <AppenderRef ref="QueryLog"/>
+        </Logger>
+    </Loggers>
+</Configuration>

@@ -1,42 +1,183 @@
 package studio.ui;
 
-import javax.swing.Icon;
-import javax.swing.JComponent;
-import javax.swing.JPanel;
+import studio.kdb.*;
+import studio.kdb.ListModel;
+import studio.ui.action.QueryResult;
+
+import javax.swing.*;
+import javax.swing.border.EtchedBorder;
+import javax.swing.text.JTextComponent;
+import java.awt.*;
 
 public class TabPanel extends JPanel {
-    Icon icon;
-    String title;
-    JComponent component;
+    private StudioPanel panel;
 
-    public TabPanel(String title, Icon icon, JComponent component) {
-        this.title = title;
-        this.icon = icon;
-        this.component = component;
+    private JToolBar toolbar = null;
+    private JToggleButton tglBtnComma;
+    private JButton uploadBtn = null;
+    private QueryResult queryResult;
+    private K.KBase result;
+    private JTextComponent textArea = null;
+    private QGrid grid = null;
+    private KFormatContext formatContext = new KFormatContext(KFormatContext.DEFAULT);
+    private ResultType type;
+
+    public TabPanel(StudioPanel panel, QueryResult queryResult) {
+        this.panel = panel;
+        this.queryResult = queryResult;
+        this.result = queryResult.getResult();
+        initComponents();
     }
 
-    public Icon getIcon() {
-        return icon;
+    public void setPanel(StudioPanel panel) {
+        this.panel = panel;
+        if (grid != null) {
+            grid.setPanel(panel);
+        }
     }
 
-    public void setIcon(Icon icon) {
-        this.icon = icon;
+    public ResultType getType() {
+        return type;
     }
 
-    public String getTitle() {
-        return title;
+    public void refreshActionState(boolean queryRunning) {
+        if (uploadBtn != null) {
+            uploadBtn.setEnabled(result != null && !queryRunning);
+        }
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    private void upload() {
+        String varName = StudioOptionPane.showInputDialog(panel, "Enter variable name", "Upload to Server");
+        if (varName == null) return;
+        panel.executeK4Query(new K.KList(new K.Function("{x set y}"), new K.KSymbol(varName), result));
     }
 
-    public JComponent getComponent() {
-        return component;
+    private void initComponents() {
+        JComponent component;
+        if (result != null) {
+            KTableModel model = KTableModel.getModel(result);
+            if (model != null) {
+                grid = new QGrid(panel, model);
+                component = grid;
+                if (model instanceof ListModel) {
+                    type = ResultType.LIST;
+                } else {
+                    type = ResultType.TABLE;
+                }
+            } else {
+                EditorPane editor = new EditorPane(false);
+                textArea = editor.getTextArea();
+                component = editor;
+                type = ResultType.TEXT;
+            }
+
+            tglBtnComma = new JToggleButton(Util.COMMA_CROSSED_ICON);
+            tglBtnComma.setSelectedIcon(Util.COMMA_ICON);
+
+            tglBtnComma.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
+            tglBtnComma.setToolTipText("Add comma as thousands separators for numbers");
+            tglBtnComma.setFocusable(false);
+            tglBtnComma.addActionListener(e -> {
+                updateFormatting();
+            });
+
+            uploadBtn = new JButton(Util.UPLOAD_ICON);
+            uploadBtn.setToolTipText("Upload to server");
+            uploadBtn.setBorder(BorderFactory.createEtchedBorder(EtchedBorder.LOWERED));
+            uploadBtn.setFocusable(false);
+            uploadBtn.addActionListener(e -> upload());
+
+            toolbar = new JToolBar();
+            toolbar.setFloatable(false);
+            toolbar.add(tglBtnComma);
+            toolbar.add(Box.createRigidArea(new Dimension(16,16)));
+            toolbar.add(uploadBtn);
+            updateFormatting();
+        } else {
+            textArea = new JTextPane();
+            String hint = QErrors.lookup(queryResult.getError().getMessage());
+            hint = hint == null ? "" : "\nStudio Hint: Possibly this error refers to " + hint;
+            textArea.setText("An error occurred during execution of the query.\nThe server sent the response:\n" + queryResult.getError().getMessage() + hint);
+            textArea.setForeground(Color.RED);
+            textArea.setEditable(false);
+            component = new JScrollPane(textArea);
+            type = ResultType.ERROR;
+        }
+
+        setLayout(new BorderLayout());
+        add(component, BorderLayout.CENTER);
     }
 
-    public void setComponent(JComponent component) {
-        this.component = component;
+    public void addInto(JTabbedPane tabbedPane) {
+        String title = type.title;
+        if (isTable()) {
+            title = title + " [" + grid.getRowCount() + " rows] ";
+        }
+        tabbedPane.addTab(title, type.icon, this);
+        int tabIndex = tabbedPane.getTabCount() - 1;
+        tabbedPane.setSelectedIndex(tabIndex);
+        tabbedPane.setToolTipTextAt(tabIndex, "Executed at server: " + queryResult.getServer().getDescription(true));
+        updateToolbarLocation(tabbedPane);
     }
+
+    public void updateToolbarLocation(JTabbedPane tabbedPane) {
+        if (toolbar == null) return;
+
+        remove(toolbar);
+        if (tabbedPane.getTabPlacement() == JTabbedPane.TOP) {
+            toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.Y_AXIS));
+            add(toolbar, BorderLayout.WEST);
+        } else {
+            toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.X_AXIS));
+            add(toolbar, BorderLayout.NORTH);
+        }
+    }
+
+    private void updateFormatting() {
+        formatContext.setShowThousandsComma(tglBtnComma.isSelected());
+        if (grid != null) {
+            grid.setFormatContext(formatContext);
+        }
+        if (type == ResultType.TEXT) {
+            String text;
+            if ((result instanceof K.UnaryPrimitive) && ((K.UnaryPrimitive)result).isIdentity() ) text = "";
+            else {
+                text = Util.limitString(result.toString(formatContext), Config.getInstance().getMaxCharsInResult());
+            }
+            textArea.setText(text);
+        }
+    }
+
+    public void toggleCommaFormatting() {
+        if (tglBtnComma == null) return;
+        tglBtnComma.doClick();
+    }
+
+    public void setDoubleClickTimeout(long doubleClickTimeout) {
+        if (grid == null) return;
+        grid.setDoubleClickTimeout(doubleClickTimeout);
+    }
+
+    public JTable getTable() {
+        if (grid == null) return null;
+        return grid.getTable();
+    }
+
+    public boolean isTable() {
+        return grid != null;
+    }
+
+    public enum ResultType {
+        ERROR("Error Details ", Util.ERROR_SMALL_ICON),
+        TEXT(I18n.getString("ConsoleView"), Util.CONSOLE_ICON),
+        LIST("List", Util.TABLE_ICON),
+        TABLE("Table", Util.TABLE_ICON);
+
+        private final String title;
+        private final Icon icon;
+        ResultType(String title, Icon icon) {
+            this.title = title;
+            this.icon = icon;
+        }
+    };
 }
-

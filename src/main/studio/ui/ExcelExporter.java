@@ -19,6 +19,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import studio.kdb.K;
+import studio.kdb.KFormatContext;
 
 class ExcelExporter {
     private static final SimpleDateFormat FORMATTER = new SimpleDateFormat();
@@ -67,14 +68,14 @@ class ExcelExporter {
                         K.KBase b = (K.KBase) model.getValueAt(i, j);
                         if (!b.isNull()) {
                             if (table.getColumnClass(j) == K.KSymbolVector.class) {
-                                cell.setCellValue(b.toString(false));
+                                cell.setCellValue(((K.KSymbol)b).s);
                             } else if (table.getColumnClass(j) == K.KDateVector.class) {
                                 cell.setCellValue(sd("yyyy-MM-dd", ((K.KDate) b).toDate()));
                             } else if (table.getColumnClass(j) == K.KTimeVector.class) {
                                 cell.setCellValue(sd("HH:mm:ss.SSS", ((K.KTime) b).toTime()));
                             } else if (table.getColumnClass(j) == K.KTimestampVector.class) {
                                 char[] cs = sd("yyyy-MM-dd HH:mm:ss.SSS",
-                                    ((K.KTimestamp) b).toTimestamp()).toCharArray();
+                                        ((K.KTimestamp) b).toTimestamp()).toCharArray();
                                 cs[10] = 'T';
                                 cell.setCellValue(new String(cs));
                             } else if (table.getColumnClass(j) == K.KMonthVector.class) {
@@ -86,20 +87,20 @@ class ExcelExporter {
                             } else if (table.getColumnClass(j) == K.KBooleanVector.class) {
                                 cell.setCellValue(((K.KBoolean) b).b ? 1 : 0);
                             } else if (table.getColumnClass(j) == K.KDoubleVector.class) {
-                                cell.setCellValue(((K.KDouble) b).d);
+                                cell.setCellValue(((K.KDouble) b).toDouble());
                             } else if (table.getColumnClass(j) == K.KFloatVector.class) {
                                 cell.setCellValue(((K.KFloat) b).f);
                             } else if (table.getColumnClass(j) == K.KLongVector.class) {
-                                cell.setCellValue(((K.KLong) b).j);
+                                cell.setCellValue(((K.KLong) b).toLong());
                             } else if (table.getColumnClass(j) == K.KIntVector.class) {
-                                cell.setCellValue(((K.KInteger) b).i);
+                                cell.setCellValue(((K.KInteger) b).toInt());
                             } else if (table.getColumnClass(j) == K.KShortVector.class) {
                                 cell.setCellValue(((K.KShort) b).s);
                             } else if (table.getColumnClass(j) == K.KCharacterVector.class) {
                                 cell.setCellValue(
-                                    new String(new char[] {((K.KCharacter) b).c}));
+                                        new String(new char[] {((K.KCharacter) b).c}));
                             } else {
-                                cell.setCellValue(K.decode(b, false));
+                                cell.setCellValue(b.toString(KFormatContext.NO_TYPE));
                             }
                         } else {
                             cell.setCellValue("");
@@ -134,12 +135,9 @@ class ExcelExporter {
                     openTable(file);
                 }
             } catch (Exception e) {
-                StudioOptionPane.showMessageDialog(null,
-                    "\nThere was an error encoding the K types into Excel types.\n\n" +
-                        e.getMessage() + "\n\n",
-                    "Studio for kdb+",
-                    JOptionPane.OK_OPTION,
-                    Util.ERROR_ICON);
+                StudioOptionPane.showError("\nThere was an error encoding the K types into Excel types.\n\n" +
+                                e.getMessage() + "\n\n",
+                        "Studio for kdb+");
             } finally {
                 pm.close();
             }
@@ -163,13 +161,9 @@ class ExcelExporter {
                 run.exec("cmd.exe /c start " + file);
             }
         } catch (IOException e) {
-            StudioOptionPane.showMessageDialog(null,
-                "\nThere was an error opening excel.\n\n" + e.getMessage() +
-                    "\n\nPerhaps you do not have Excel installed,\nor .xls files are not associated with Excel",
-                "Studio for kdb+",
-                JOptionPane.OK_OPTION,
-                Util.ERROR_ICON);
-
+            StudioOptionPane.showError("\nThere was an error opening excel.\n\n" + e.getMessage() +
+                            "\n\nPerhaps you do not have Excel installed,\nor .xls files are not associated with Excel",
+                    "Studio for kdb+");
         }
     }
 }

@@ -1,5 +1,8 @@
 package studio.core;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -14,6 +17,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class AuthenticationManager {
+
+    private static final Logger log = LogManager.getLogger();
+
     private static AuthenticationManager instance;
     private Map classMap = new HashMap();
 
@@ -78,8 +84,7 @@ public class AuthenticationManager {
                         }
                     }
                 } catch (IOException e) {
-                    System.err.println("Error loading plugin: " + filename);
-                    e.printStackTrace(System.err);
+                    log.error("Error loading plugin {}", filename, e);
                 }
             }
         }
