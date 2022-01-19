@@ -5,22 +5,30 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public class K {
     private final static DecimalFormat nsFormatter = new DecimalFormat("000000000");
     private final static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy.MM.dd");
-    private final static SimpleDateFormat dateTimeFormatter = new SimpleDateFormat("yyyy.MM.dd'T'HH:mm:ss.SSS");
-    private final static SimpleDateFormat timestampFormatter = new SimpleDateFormat("yyyy.MM.dd'D'HH:mm:ss.");
+    private final static SimpleDateFormat dateTimeFormatter =
+        new SimpleDateFormat("yyyy.MM.dd'T'HH:mm:ss.SSS");
+    private final static SimpleDateFormat timestampFormatter =
+        new SimpleDateFormat("yyyy.MM.dd'D'HH:mm:ss.");
 
 
     static {
         TimeZone gmtTimeZone = java.util.TimeZone.getTimeZone("GMT");
         Stream.of(dateFormatter, dateTimeFormatter, timestampFormatter)
-                .forEach(f -> f.setTimeZone(gmtTimeZone));
+            .forEach(f -> f.setTimeZone(gmtTimeZone));
     }
 
     private static final String enlist = "enlist ";
@@ -80,7 +88,9 @@ public class K {
         }
 
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
-            if (builder == null) builder = new StringBuilder();
+            if (builder == null) {
+                builder = new StringBuilder();
+            }
             return builder;
         }
 
@@ -106,6 +116,7 @@ public class K {
             super(type);
             this.value = value;
         }
+
         public double toDouble() {
             return value;
         }
@@ -122,8 +133,10 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (!super.equals(obj)) return false;
-            return value == ((KByteBase)obj).value;
+            if (!super.equals(obj)) {
+                return false;
+            }
+            return value == ((KByteBase) obj).value;
         }
 
         @Override
@@ -133,8 +146,8 @@ public class K {
 
         @Override
         public int compareTo(KBase o) {
-            if (o instanceof KByteBase)  {
-                return Byte.compare(value, ((KByteBase)o).value);
+            if (o instanceof KByteBase) {
+                return Byte.compare(value, ((KByteBase) o).value);
             }
             return super.compareTo(o);
         }
@@ -147,6 +160,7 @@ public class K {
             super(type);
             this.value = value;
         }
+
         public boolean isNull() {
             return value == Integer.MIN_VALUE;
         }
@@ -171,14 +185,16 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (!super.equals(obj)) return false;
-            return value == ((KIntBase)obj).value;
+            if (!super.equals(obj)) {
+                return false;
+            }
+            return value == ((KIntBase) obj).value;
         }
 
         @Override
         public int compareTo(KBase o) {
             if (o instanceof KIntBase) {
-                return Integer.compare(value, ((KIntBase)o).value);
+                return Integer.compare(value, ((KIntBase) o).value);
             }
             return super.compareTo(o);
         }
@@ -191,6 +207,7 @@ public class K {
             super(type);
             this.value = value;
         }
+
         public boolean isNull() {
             return value == Long.MIN_VALUE;
         }
@@ -202,10 +219,12 @@ public class K {
         public long toLong() {
             return value;
         }
+
         @Override
         public void serialiseData(OutputStream o) throws IOException {
             write(o, value);
         }
+
         @Override
         public int hashCode() {
             return Long.hashCode(value);
@@ -213,14 +232,16 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! obj.getClass().equals(this.getClass())) return false;
-            return value == ((KLongBase)obj).value;
+            if (!obj.getClass().equals(this.getClass())) {
+                return false;
+            }
+            return value == ((KLongBase) obj).value;
         }
 
         @Override
         public int compareTo(KBase o) {
             if (o instanceof KLongBase) {
-                return Long.compare(value, ((KLongBase)o).value);
+                return Long.compare(value, ((KLongBase) o).value);
             }
             return super.compareTo(o);
         }
@@ -255,14 +276,17 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (!super.equals(obj)) return false;
-            return Double.doubleToLongBits(value) == Double.doubleToLongBits(((KDoubleBase)obj).value);
+            if (!super.equals(obj)) {
+                return false;
+            }
+            return Double.doubleToLongBits(value) ==
+                Double.doubleToLongBits(((KDoubleBase) obj).value);
         }
 
         @Override
         public int compareTo(KBase o) {
             if (o instanceof KDoubleBase) {
-                return Double.compare(value, ((KDoubleBase)o).value);
+                return Double.compare(value, ((KDoubleBase) o).value);
             }
             return super.compareTo(o);
         }
@@ -280,7 +304,7 @@ public class K {
         @Override
         public void serialiseData(OutputStream o) throws IOException {
             write(o, array.length);
-            for (KBase obj: array) {
+            for (KBase obj : array) {
                 obj.serialise(o);
             }
         }
@@ -292,8 +316,10 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! super.equals(obj)) return false;
-            return Objects.deepEquals(array, ((KArrayBase)obj).array);
+            if (!super.equals(obj)) {
+                return false;
+            }
+            return Objects.deepEquals(array, ((KArrayBase) obj).array);
         }
     }
 
@@ -330,13 +356,18 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (!super.equals(obj)) return false;
-            return this.obj.equals(((Adverb)obj).obj);
+            if (!super.equals(obj)) {
+                return false;
+            }
+            return this.obj.equals(((Adverb) obj).obj);
         }
     }
 
     public static class BinaryPrimitive extends Primitive {
-        private final static String[] ops = {":", "+", "-", "*", "%", "&", "|", "^", "=", "<", ">", "$", ",", "#", "_", "~", "!", "?", "@", ".", "0:", "1:", "2:", "in", "within", "like", "bin", "ss", "insert", "wsum", "wavg", "div", "xexp", "setenv", "binr", "cov", "cor"};
+        private final static String[] ops =
+            {":", "+", "-", "*", "%", "&", "|", "^", "=", "<", ">", "$", ",", "#", "_", "~", "!",
+                "?", "@", ".", "0:", "1:", "2:", "in", "within", "like", "bin", "ss", "insert",
+                "wsum", "wavg", "div", "xexp", "setenv", "binr", "cov", "cor"};
 
         public String getDataType() {
             return "Binary Primitive";
@@ -360,7 +391,7 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            for (KBase arg: array) {
+            for (KBase arg : array) {
                 arg.format(builder, context);
             }
             return builder;
@@ -468,8 +499,10 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof Function)) return false;
-            return body.equals(((Function)obj).body);
+            if (!(obj instanceof Function)) {
+                return false;
+            }
+            return body.equals(((Function) obj).body);
         }
     }
 
@@ -482,8 +515,9 @@ public class K {
 
         public Primitive(int type, String[] ops, int value) {
             super(type, (byte) value);
-            if (value >= 0 && value < ops.length)
+            if (value >= 0 && value < ops.length) {
                 s = ops[value];
+            }
         }
 
         public String getPrimitive() {
@@ -493,7 +527,9 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (value != -1) builder.append(getPrimitive());
+            if (value != -1) {
+                builder.append(getPrimitive());
+            }
             return builder;
         }
 
@@ -511,11 +547,15 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (array.length == 0) return builder; // not sure if such is possible
+            if (array.length == 0) {
+                return builder; // not sure if such is possible
+            }
             array[0].format(builder, context);
             builder.append("[");
             for (int i = 1; i < array.length; i++) {
-                if (i > 1) builder.append(";");
+                if (i > 1) {
+                    builder.append(";");
+                }
                 array[i].format(builder, context);
             }
             builder.append("]");
@@ -536,7 +576,11 @@ public class K {
     }
 
     public static class UnaryPrimitive extends Primitive {
-        private static final String[] ops = {"::", "+:", "-:", "*:", "%:", "&:", "|:", "^:", "=:", "<:", ">:", "$:", ",:", "#:", "_:", "~:", "!:", "?:", "@:", ".:", "0::", "1::", "2::", "avg", "last", "sum", "prd", "min", "max", "exit", "getenv", "abs", "sqrt", "log", "exp", "sin", "asin", "cos", "acos", "tan", "atan", "enlist", "var", "dev", "hopen"};
+        private static final String[] ops =
+            {"::", "+:", "-:", "*:", "%:", "&:", "|:", "^:", "=:", "<:", ">:", "$:", ",:", "#:",
+                "_:", "~:", "!:", "?:", "@:", ".:", "0::", "1::", "2::", "avg", "last", "sum",
+                "prd", "min", "max", "exit", "getenv", "abs", "sqrt", "log", "exp", "sin", "asin",
+                "cos", "acos", "tan", "atan", "enlist", "var", "dev", "hopen"};
 
         public UnaryPrimitive(int i) {
             super(101, ops, i);
@@ -562,8 +606,8 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             return super.format(builder, context)
-                        .append(b ? "1" : "0")
-                        .append(context.showType() ? "b" : "");
+                .append(b ? "1" : "0")
+                .append(context.showType() ? "b" : "");
         }
 
         public double toDouble() {
@@ -576,7 +620,7 @@ public class K {
 
         @Override
         protected void serialiseData(OutputStream o) throws IOException {
-            write(o,(byte) (b ? 1:0));
+            write(o, (byte) (b ? 1 : 0));
         }
 
         @Override
@@ -586,20 +630,22 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof KBoolean)) return false;
-            return b == ((KBoolean)obj).b;
+            if (!(obj instanceof KBoolean)) {
+                return false;
+            }
+            return b == ((KBoolean) obj).b;
         }
 
         @Override
         public int compareTo(KBase o) {
             if (o instanceof KBoolean) {
-                return Boolean.compare(b, ((KBoolean)o).b);
+                return Boolean.compare(b, ((KBoolean) o).b);
             }
             return super.compareTo(o);
         }
     }
 
-    public static class KByte extends KByteBase{
+    public static class KByte extends KByteBase {
         public String getDataType() {
             return "Byte";
         }
@@ -611,9 +657,9 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             return super.format(builder, context)
-                        .append("0x")
-                        .append(Integer.toHexString((value >> 4) & 0xf))
-                        .append(Integer.toHexString(value & 0xf));
+                .append("0x")
+                .append(Integer.toHexString((value >> 4) & 0xf))
+                .append(Integer.toHexString(value & 0xf));
         }
 
     }
@@ -641,11 +687,18 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0N");
-            else if (s == Short.MAX_VALUE) builder.append("0W");
-            else if (s == -Short.MAX_VALUE) builder.append("-0W");
-            else builder.append(context.getNumberFormat().format(s));
-            if (context.showType()) builder.append("h");
+            if (isNull()) {
+                builder.append("0N");
+            } else if (s == Short.MAX_VALUE) {
+                builder.append("0W");
+            } else if (s == -Short.MAX_VALUE) {
+                builder.append("-0W");
+            } else {
+                builder.append(context.getNumberFormat().format(s));
+            }
+            if (context.showType()) {
+                builder.append("h");
+            }
             return builder;
         }
 
@@ -661,14 +714,16 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof KShort)) return false;
-            return s == ((KShort)obj).s;
+            if (!(obj instanceof KShort)) {
+                return false;
+            }
+            return s == ((KShort) obj).s;
         }
 
         @Override
         public int compareTo(KBase o) {
             if (o instanceof KShort) {
-                return Short.compare(s, ((KShort)o).s);
+                return Short.compare(s, ((KShort) o).s);
             }
             return super.compareTo(o);
         }
@@ -686,11 +741,18 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0N");
-            else if (value == Integer.MAX_VALUE) builder.append("0W");
-            else if (value == -Integer.MAX_VALUE) builder.append("-0W");
-            else builder.append(context.getNumberFormat().format(value));
-            if (context.showType()) builder.append("i");
+            if (isNull()) {
+                builder.append("0N");
+            } else if (value == Integer.MAX_VALUE) {
+                builder.append("0W");
+            } else if (value == -Integer.MAX_VALUE) {
+                builder.append("-0W");
+            } else {
+                builder.append(context.getNumberFormat().format(value));
+            }
+            if (context.showType()) {
+                builder.append("i");
+            }
             return builder;
         }
     }
@@ -714,7 +776,9 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (context.showType()) builder.append("`");
+            if (context.showType()) {
+                builder.append("`");
+            }
             return builder.append(s);
         }
 
@@ -731,8 +795,10 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof KSymbol)) return false;
-            return s.equals(((KSymbol)obj).s);
+            if (!(obj instanceof KSymbol)) {
+                return false;
+            }
+            return s.equals(((KSymbol) obj).s);
         }
     }
 
@@ -748,10 +814,15 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0N");
-            else if (value == Long.MAX_VALUE) builder.append("0W");
-            else if (value == -Long.MAX_VALUE) builder.append("-0W");
-            else builder.append(context.getNumberFormat().format(value));
+            if (isNull()) {
+                builder.append("0N");
+            } else if (value == Long.MAX_VALUE) {
+                builder.append("0W");
+            } else if (value == -Long.MAX_VALUE) {
+                builder.append("-0W");
+            } else {
+                builder.append(context.getNumberFormat().format(value));
+            }
             return builder;
         }
     }
@@ -775,8 +846,11 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (context.showType()) builder.append("\"").append(c).append("\"");
-            else builder.append(c);
+            if (context.showType()) {
+                builder.append("\"").append(c).append("\"");
+            } else {
+                builder.append(c);
+            }
             return builder;
         }
 
@@ -792,8 +866,10 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof KCharacter)) return false;
-            return c == ((KCharacter)obj).c;
+            if (!(obj instanceof KCharacter)) {
+                return false;
+            }
+            return c == ((KCharacter) obj).c;
         }
     }
 
@@ -820,11 +896,18 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0N");
-            else if (f == Float.POSITIVE_INFINITY) builder.append("0w");
-            else if (f == Float.NEGATIVE_INFINITY) builder.append("-0w");
-            else builder.append(context.getNumberFormat().format(f));
-            if (context.showType()) builder.append("e");
+            if (isNull()) {
+                builder.append("0N");
+            } else if (f == Float.POSITIVE_INFINITY) {
+                builder.append("0w");
+            } else if (f == Float.NEGATIVE_INFINITY) {
+                builder.append("-0w");
+            } else {
+                builder.append(context.getNumberFormat().format(f));
+            }
+            if (context.showType()) {
+                builder.append("e");
+            }
             return builder;
         }
 
@@ -841,14 +924,16 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof KFloat)) return false;
-            return Float.floatToIntBits(f) == Float.floatToIntBits(((KFloat)obj).f);
+            if (!(obj instanceof KFloat)) {
+                return false;
+            }
+            return Float.floatToIntBits(f) == Float.floatToIntBits(((KFloat) obj).f);
         }
 
         @Override
         public int compareTo(KBase o) {
             if (o instanceof KFloat) {
-                return Float.compare(f, ((KFloat)o).f);
+                return Float.compare(f, ((KFloat) o).f);
             }
             return super.compareTo(o);
         }
@@ -866,11 +951,18 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0n");
-            else if (value == Double.POSITIVE_INFINITY) builder.append("0w");
-            else if (value == Double.NEGATIVE_INFINITY) builder.append("-0w");
-            else builder.append(context.getNumberFormat().format(value));
-            if (context.showType()) builder.append("f");
+            if (isNull()) {
+                builder.append("0n");
+            } else if (value == Double.POSITIVE_INFINITY) {
+                builder.append("0w");
+            } else if (value == Double.NEGATIVE_INFINITY) {
+                builder.append("-0w");
+            } else {
+                builder.append(context.getNumberFormat().format(value));
+            }
+            if (context.showType()) {
+                builder.append("f");
+            }
             return builder;
         }
 
@@ -882,6 +974,10 @@ public class K {
     }
 
     public static class KDate extends KIntBase {
+
+        private static final DateFormat
+            DEFAULT_DATE_FORMAT = DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.getDefault());
+
         public String getDataType() {
             return "Date";
         }
@@ -893,15 +989,32 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Nd");
-            else if (value == Integer.MAX_VALUE) builder.append("0Wd");
-            else if (value == -Integer.MAX_VALUE) builder.append("-0Wd");
-            else builder.append(dateFormatter.format(toDate()));
+            if (isNull()) {
+                builder.append("0Nd");
+            } else if (value == Integer.MAX_VALUE) {
+                builder.append("0Wd");
+            } else if (value == -Integer.MAX_VALUE) {
+                builder.append("-0Wd");
+            } else {
+                builder.append(dateFormatter.format(toDate()));
+            }
             return builder;
         }
 
         public Date toDate() {
             return new Date(86400000L * (value + 10957));
+        }
+
+        public String toExcelDate() {
+            if (isNull()) {
+                return "0N";
+            } else if (value == Integer.MAX_VALUE) {
+                return "0W";
+            } else if (value == -Integer.MAX_VALUE) {
+                return "-0W";
+            } else {
+                return DEFAULT_DATE_FORMAT.format(toDate());
+            }
         }
     }
 
@@ -942,8 +1055,10 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof KGuid)) return false;
-            return uuid.equals(((KGuid)obj).uuid);
+            if (!(obj instanceof KGuid)) {
+                return false;
+            }
+            return uuid.equals(((KGuid) obj).uuid);
         }
     }
 
@@ -959,12 +1074,15 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Nt");
-            else if (value == Integer.MAX_VALUE) builder.append("0Wt");
-            else if (value == -Integer.MAX_VALUE) builder.append("-0Wt");
-            else {
+            if (isNull()) {
+                builder.append("0Nt");
+            } else if (value == Integer.MAX_VALUE) {
+                builder.append("0Wt");
+            } else if (value == -Integer.MAX_VALUE) {
+                builder.append("-0Wt");
+            } else {
                 int v = value;
-                if (v<0) {
+                if (v < 0) {
                     builder.append("-");
                     v = -v;
                 }
@@ -973,7 +1091,7 @@ public class K {
                 int m = v / 60000 % 60;
                 int h = v / 3600000;
                 builder.append(i2(h)).append(":").append(i2(m)).append(":").append(i2(s))
-                        .append(".").append(i3(ms));
+                    .append(".").append(i3(ms));
             }
             return builder;
         }
@@ -995,10 +1113,15 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Nz");
-            else if (value == Double.POSITIVE_INFINITY) builder.append("0wz");
-            else if (value == Double.NEGATIVE_INFINITY) builder.append("-0wz");
-            else builder.append(dateTimeFormatter.format(toTimestamp()));
+            if (isNull()) {
+                builder.append("0Nz");
+            } else if (value == Double.POSITIVE_INFINITY) {
+                builder.append("0wz");
+            } else if (value == Double.NEGATIVE_INFINITY) {
+                builder.append("-0wz");
+            } else {
+                builder.append(dateTimeFormatter.format(toTimestamp()));
+            }
             return builder;
         }
 
@@ -1020,13 +1143,16 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Np");
-            else if (value == Long.MAX_VALUE) builder.append("0Wp");
-            else if (value == -Long.MAX_VALUE) builder.append("-0Wp");
-            else {
+            if (isNull()) {
+                builder.append("0Np");
+            } else if (value == Long.MAX_VALUE) {
+                builder.append("0Wp");
+            } else if (value == -Long.MAX_VALUE) {
+                builder.append("-0Wp");
+            } else {
                 Timestamp ts = toTimestamp();
                 builder.append(timestampFormatter.format(ts))
-                                .append(nsFormatter.format(ts.getNanos()));
+                    .append(nsFormatter.format(ts.getNanos()));
             }
             return builder;
         }
@@ -1073,9 +1199,13 @@ public class K {
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
             boolean useBrackets = attr != 0 || x instanceof Flip || (x.count() == 1);
-            if (useBrackets) builder.append("(");
+            if (useBrackets) {
+                builder.append("(");
+            }
             x.format(builder, context);
-            if (useBrackets) builder.append(")");
+            if (useBrackets) {
+                builder.append(")");
+            }
             builder.append("!");
             y.format(builder, context);
             return builder;
@@ -1090,12 +1220,14 @@ public class K {
 
         @Override
         public int hashCode() {
-            return x.hashCode() +  137 * y.hashCode();
+            return x.hashCode() + 137 * y.hashCode();
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof Dict)) return false;
+            if (!(obj instanceof Dict)) {
+                return false;
+            }
             Dict dict = (Dict) obj;
             return x.equals(dict.x) && y.equals(dict.y) && attr == dict.attr;
         }
@@ -1111,6 +1243,7 @@ public class K {
         }
 
         abstract public K.KBase getX();
+
         abstract public K.KBase getY();
 
         @Override
@@ -1122,8 +1255,8 @@ public class K {
 
         @Override
         protected void serialiseData(OutputStream o) throws IOException {
-            write(o, (byte)0);
-            new Dict(getX(),getY()).serialise(o);
+            write(o, (byte) 0);
+            new Dict(getX(), getY()).serialise(o);
         }
 
         @Override
@@ -1133,7 +1266,9 @@ public class K {
 
         @Override
         public boolean equals(Object obj) {
-            if (! (obj instanceof FlipBase)) return false;
+            if (!(obj instanceof FlipBase)) {
+                return false;
+            }
             FlipBase flip = (FlipBase) obj;
             return getX().equals(flip.getX()) && getY().equals(flip.getY());
         }
@@ -1197,16 +1332,21 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0N");
-            else if (value == Integer.MAX_VALUE) builder.append("0W");
-            else if (value == -Integer.MAX_VALUE) builder.append("-0W");
-            else {
+            if (isNull()) {
+                builder.append("0N");
+            } else if (value == Integer.MAX_VALUE) {
+                builder.append("0W");
+            } else if (value == -Integer.MAX_VALUE) {
+                builder.append("-0W");
+            } else {
                 int m = value + 24000, y = m / 12;
 
                 builder.append(i2(y / 100)).append(i2(y % 100))
-                        .append(".").append(i2(1 + m % 12));
+                    .append(".").append(i2(1 + m % 12));
             }
-            if (context.showType()) builder.append("m");
+            if (context.showType()) {
+                builder.append("m");
+            }
             return builder;
         }
 
@@ -1232,12 +1372,18 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Nu");
-            else if (value == Integer.MAX_VALUE) builder.append("0Wu");
-            else if (value == -Integer.MAX_VALUE) builder.append("-0Wu");
-            else builder.append(i2(value / 60)).append(":").append(i2(value % 60));
+            if (isNull()) {
+                builder.append("0Nu");
+            } else if (value == Integer.MAX_VALUE) {
+                builder.append("0Wu");
+            } else if (value == -Integer.MAX_VALUE) {
+                builder.append("-0Wu");
+            } else {
+                builder.append(i2(value / 60)).append(":").append(i2(value % 60));
+            }
             return builder;
         }
+
         public Date toDate() {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, value / 60);
@@ -1259,10 +1405,13 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Nv");
-            else if (value == Integer.MAX_VALUE) builder.append("0Wv");
-            else if (value == -Integer.MAX_VALUE) builder.append("-0Wv");
-            else {
+            if (isNull()) {
+                builder.append("0Nv");
+            } else if (value == Integer.MAX_VALUE) {
+                builder.append("0Wv");
+            } else if (value == -Integer.MAX_VALUE) {
+                builder.append("-0Wv");
+            } else {
                 int s = value % 60;
                 int m = value / 60 % 60;
                 int h = value / 3600;
@@ -1274,7 +1423,7 @@ public class K {
         public Date toDate() {
             Calendar cal = Calendar.getInstance();
             cal.set(Calendar.HOUR_OF_DAY, value / (60 * 60));
-            cal.set(Calendar.MINUTE,  (value % (60 * 60)) / 60);
+            cal.set(Calendar.MINUTE, (value % (60 * 60)) / 60);
             cal.set(Calendar.SECOND, value % 60);
             return cal.getTime();
         }
@@ -1292,21 +1441,26 @@ public class K {
         @Override
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (isNull()) builder.append("0Nn");
-            else if (value == Long.MAX_VALUE) builder.append("0Wn");
-            else if (value == -Long.MAX_VALUE) builder.append("-0Wn");
-            else {
+            if (isNull()) {
+                builder.append("0Nn");
+            } else if (value == Long.MAX_VALUE) {
+                builder.append("0Wn");
+            } else if (value == -Long.MAX_VALUE) {
+                builder.append("-0Wn");
+            } else {
                 long jj = value;
                 if (jj < 0) {
                     jj = -jj;
                     builder.append("-");
                 }
                 int d = ((int) (jj / 86400000000000L));
-                if (d != 0) builder.append(d).append("D");
+                if (d != 0) {
+                    builder.append(d).append("D");
+                }
                 builder.append(i2((int) ((jj % 86400000000000L) / 3600000000000L)))
-                        .append(":").append(i2((int) ((jj % 3600000000000L) / 60000000000L)))
-                        .append(":").append(i2((int) ((jj % 60000000000L) / 1000000000L)))
-                        .append(".").append(nsFormatter.format((int) (jj % 1000000000L)));
+                    .append(":").append(i2((int) ((jj % 3600000000000L) / 60000000000L)))
+                    .append(":").append(i2((int) ((jj % 60000000000L) / 1000000000L)))
+                    .append(".").append(nsFormatter.format((int) (jj % 1000000000L)));
             }
             return builder;
         }
@@ -1366,19 +1520,27 @@ public class K {
             return array;
         }
 
-        private final static String[] sAttr = new String[]{"", "`s#", "`u#", "`p#", "`g#"};
+        private final static String[] sAttr = new String[] {"", "`s#", "`u#", "`p#", "`g#"};
 
         //default implementation
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
-            if (getLength() == 0) builder.append("`").append(typeName).append("$()");
-            else {
-                if (getLength() == 1) builder.append(enlist);
-                KFormatContext childContext = context.showType() ? new KFormatContext(context).setShowType(false) : context;
+            if (getLength() == 0) {
+                builder.append("`").append(typeName).append("$()");
+            } else {
+                if (getLength() == 1) {
+                    builder.append(enlist);
+                }
+                KFormatContext childContext =
+                    context.showType() ? new KFormatContext(context).setShowType(false) : context;
                 for (int i = 0; i < getLength(); i++) {
-                    if (i > 0) builder.append(" ");
+                    if (i > 0) {
+                        builder.append(" ");
+                    }
                     at(i).format(builder, childContext);
                 }
-                if (context.showType()) builder.append(typeChar);
+                if (context.showType()) {
+                    builder.append(typeChar);
+                }
             }
             return builder;
         }
@@ -1386,7 +1548,9 @@ public class K {
         @Override
         public final StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
-            if (context.showType() && attr <= sAttr.length) builder.append(sAttr[attr]);
+            if (context.showType() && attr <= sAttr.length) {
+                builder.append(sAttr[attr]);
+            }
             return formatVector(builder, context);
         }
 
@@ -1394,20 +1558,22 @@ public class K {
         public void serialiseData(OutputStream o) throws IOException {
             write(o, attr);
             write(o, length);
-            for (int index=0; index<length; index++) {
+            for (int index = 0; index < length; index++) {
                 at(index).serialiseData(o);
             }
         }
 
         @Override
         public int hashCode() {
-            return length*getType();
+            return length * getType();
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (!super.equals(obj)) return false;
-            KBaseVector<? extends KBase> vector = (KBaseVector<? extends KBase>)obj;
+            if (!super.equals(obj)) {
+                return false;
+            }
+            KBaseVector<? extends KBase> vector = (KBaseVector<? extends KBase>) obj;
             return Objects.deepEquals(array, vector.array) && attr == vector.attr;
         }
     }
@@ -1455,13 +1621,20 @@ public class K {
 
         @Override
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
-            if (getLength() == 1) builder.append(enlist);
-            else builder.append("(");
+            if (getLength() == 1) {
+                builder.append(enlist);
+            } else {
+                builder.append("(");
+            }
             for (int i = 0; i < getLength(); i++) {
-                if (i > 0) builder.append(";");
+                if (i > 0) {
+                    builder.append(";");
+                }
                 at(i).format(builder, context);
             }
-            if (getLength() != 1) builder.append(")");
+            if (getLength() != 1) {
+                builder.append(")");
+            }
             return builder;
         }
 
@@ -1470,7 +1643,7 @@ public class K {
             int length = getLength();
             write(o, (byte) 0);
             write(o, length);
-            for (int index=0; index<length; index++) {
+            for (int index = 0; index < length; index++) {
                 at(index).serialise(o);
             }
         }
@@ -1501,7 +1674,7 @@ public class K {
 
         public KFloat at(int i) {
             return new KFloat(Array.getFloat(array, i));
-    }
+        }
 
     }
 
@@ -1660,11 +1833,15 @@ public class K {
 
         @Override
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
-            if (getLength() == 0) builder.append("`boolean$()");
-            else {
-                if (getLength() == 1) builder.append(enlist);
-                for (int i = 0; i < getLength(); i++)
+            if (getLength() == 0) {
+                builder.append("`boolean$()");
+            } else {
+                if (getLength() == 1) {
+                    builder.append(enlist);
+                }
+                for (int i = 0; i < getLength(); i++) {
                     builder.append(Array.getBoolean(array, i) ? "1" : "0");
+                }
                 builder.append("b");
             }
             return builder;
@@ -1686,14 +1863,17 @@ public class K {
 
         @Override
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
-            if (getLength() == 0) builder.append("`byte$()");
-            else {
-                if (getLength() == 1) builder.append(enlist);
+            if (getLength() == 0) {
+                builder.append("`byte$()");
+            } else {
+                if (getLength() == 1) {
+                    builder.append(enlist);
+                }
                 builder.append("0x");
                 for (int i = 0; i < getLength(); i++) {
                     byte b = Array.getByte(array, i);
                     builder.append(Integer.toHexString((b >> 4) & 0xf))
-                            .append(Integer.toHexString(b & 0xf));
+                        .append(Integer.toHexString(b & 0xf));
                 }
             }
             return builder;
@@ -1715,11 +1895,15 @@ public class K {
 
         @Override
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
-            if (getLength() == 0) builder.append("`symbol$()");
-            else {
-                if (getLength() == 1) builder.append(enlist);
-                for (int i = 0; i < getLength(); i++)
+            if (getLength() == 0) {
+                builder.append("`symbol$()");
+            } else {
+                if (getLength() == 1) {
+                    builder.append(enlist);
+                }
+                for (int i = 0; i < getLength(); i++) {
                     builder.append("`").append(Array.get(array, i));
+                }
             }
             return builder;
         }
@@ -1746,14 +1930,18 @@ public class K {
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
             if (getLength() == 1) {
                 char ch = Array.getChar(array, 0);
-                if (ch<=255) {
+                if (ch <= 255) {
                     builder.append(enlist);
                 }
             }
 
-            if (context.showType()) builder.append("\"");
+            if (context.showType()) {
+                builder.append("\"");
+            }
             builder.append(getString());
-            if (context.showType()) builder.append("\"");
+            if (context.showType()) {
+                builder.append("\"");
+            }
             return builder;
         }
 
