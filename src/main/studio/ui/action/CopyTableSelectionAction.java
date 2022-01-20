@@ -66,8 +66,13 @@ public class CopyTableSelectionAction implements ActionListener {
                     sb.append("\"");
 
                 K.KBase b = (K.KBase) table.getValueAt(rowsselected[row], colsselected[col]);
-                if (!b.isNull())
-                    sb.append(b.toString(KFormatContext.NO_TYPE));
+                if (!b.isNull()) {
+                    if (b instanceof K.KDate) {
+                        sb.append(((K.KDate) b).toExcelDate());
+                    } else {
+                        sb.append(b.toString(KFormatContext.NO_TYPE));
+                    }
+                }
                 if (symColumn)
                     sb.append("\"");
                 if (col < numcols - 1)
