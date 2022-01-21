@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: KDB Studio build (Java 8)
+name: KDB Studio build (Java 17)
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -26,15 +26,16 @@ jobs:
     - name: Setup java
       uses: actions/setup-java@v1
       with:
-        java-version: 8
-    - name: Build KDB Studio (with gradle)
+        java-version: 17
+    - name: Build KDB Studio (with Gradle)
       uses: eskatos/gradle-command-action@v1
       with:
         arguments: check install
+    # Runs a single command using the runners shell
     - name: Show workspace
       run: find
     - name: Make release archive
-      run: cd build/install; zip -r studio *
+      run: cd build/install; zip -r studio_java17 *
     - name: Upload release
       if: github.event_name == 'push'
       uses: "marvinpinto/action-automatic-releases@latest"
@@ -44,4 +45,4 @@ jobs:
         prerelease: true
         title: "Latest Build"
         files: |
-          build/install/studio.zip
+          build/install/studio_java17.zip
