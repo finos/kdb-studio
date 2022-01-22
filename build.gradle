@@ -57,11 +57,11 @@ sourceSets {
     }
     test {
         java {
-            srcDirs 'main/test'
+            srcDirs 'src/test'
         }
         resources {
-            srcDirs 'main/test'
-            include 'main/test/syntax.csv'
+            srcDirs 'src/test'
+            include 'syntax.csv'
         }
     }
 }
