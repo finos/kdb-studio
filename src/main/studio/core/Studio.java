@@ -44,6 +44,47 @@ public class Studio {
         System.setErr(stderrStream);
     }
 
+    public static void init0() {
+        //called from main and integration tests
+        studio.ui.I18n.setLocale(Locale.getDefault());
+    }
+
+    public static StudioPanel createPanel(String[] args) {
+        //called from main and integration tests
+        StudioPanel result = null;
+        if (args.length > 0) {
+            result = new StudioPanel();
+            result.addTab(getInitServer(), args[0]);
+        } else {
+            Workspace workspace = Config.getInstance().loadWorkspace();
+            // Reload files from disk if it was modified somewhere else
+            for (Workspace.Window window: workspace.getWindows()) {
+                for (Workspace.Tab tab: window.getTabs()) {
+                    if (tab.getFilename() != null && !tab.isModified()) {
+                        try {
+                            Content content = FileReaderWriter.read(tab.getFilename());
+                            tab.addContent(content);
+                        } catch(IOException e) {
+                            log.error("Can't load file " + tab.getFilename() + " from disk", e);
+                            tab.setModified(true);
+                        }
+                    }
+                }
+            }
+
+
+            if (workspace.getWindows().length == 0) {
+                String[] mruFiles = Config.getInstance().getMRUFiles();
+                String filename = mruFiles.length == 0 ? null : mruFiles[0];
+                result = new StudioPanel();
+                result.addTab(getInitServer(), filename);
+            } else {
+                StudioPanel.loadWorkspace(workspace);
+            }
+        }
+        return result;
+    }
+
     public static void main(final String[] args) {
         initLogger();
         WindowsAppUserMode.setMainId();
@@ -69,7 +110,7 @@ public class Studio {
             }
         }
 
-        studio.ui.I18n.setLocale(Locale.getDefault());
+        init0();
 
         UIManager.put("Table.font",new javax.swing.plaf.FontUIResource("Monospaced",Font.PLAIN,UIManager.getFont("Table.font").getSize()));
         System.setProperty("awt.useSystemAAFontSettings","on");
@@ -90,34 +131,7 @@ public class Studio {
         log.info("Start Studio with args {}", Arrays.asList(args));
         FileWatcher.start();
 
-        if (args.length > 0) {
-            new StudioPanel().addTab(getInitServer(), args[0]);
-        } else {
-            Workspace workspace = Config.getInstance().loadWorkspace();
-            // Reload files from disk if it was modified somewhere else
-            for (Workspace.Window window: workspace.getWindows()) {
-                for (Workspace.Tab tab: window.getTabs()) {
-                    if (tab.getFilename() != null && !tab.isModified()) {
-                        try {
-                            Content content = FileReaderWriter.read(tab.getFilename());
-                            tab.addContent(content);
-                        } catch(IOException e) {
-                            log.error("Can't load file " + tab.getFilename() + " from disk", e);
-                            tab.setModified(true);
-                        }
-                    }
-                }
-            }
-
-
-            if (workspace.getWindows().length == 0) {
-                String[] mruFiles = Config.getInstance().getMRUFiles();
-                String filename = mruFiles.length == 0 ? null : mruFiles[0];
-                new StudioPanel().addTab(getInitServer(), filename);
-            } else {
-                StudioPanel.loadWorkspace(workspace);
-            }
-        }
+        createPanel(args);
 
         WorkspaceSaver.init();
 

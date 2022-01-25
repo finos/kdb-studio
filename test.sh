@@ -20,7 +20,8 @@ fi
 
 FAIL=0
 
-if ! ./gradlew cleanTest integrationTest --no-build-cache; then
+rm -f build/test-results/test/*.xml
+if ! ./gradlew cleanTest check integrationTest --no-build-cache; then
     FAIL=1
     cat build/test-results/test/*.xml || true
 fi

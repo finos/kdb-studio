@@ -1337,8 +1337,8 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
             toolbar.add(chartAction);
             toolbar.addSeparator();
 
-            toolbar.add(undoAction);
-            toolbar.add(redoAction);
+            toolbar.add(undoAction).setName("undo");
+            toolbar.add(redoAction).setName("redo");
             toolbar.addSeparator();
 
             toolbar.add(cutAction);
@@ -1886,5 +1886,9 @@ public class StudioPanel extends JPanel implements Observer,WindowListener {
         public void removeUpdate(DocumentEvent evt) {
             update();
         }
+    }
+
+    public JFrame frame() {
+        return frame;
     }
 }
