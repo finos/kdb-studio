@@ -44,8 +44,8 @@ sourceSets {
     }
     intTest {
         java.srcDirs += ['src/test-integration']
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.test.compileClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
     }
 }
 

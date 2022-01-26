@@ -1,6 +1,7 @@
 package studio.kdb;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -8,9 +9,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "qTestPort", matches = "[0-9]+")
 public class KSerialiseTest {
@@ -31,9 +29,9 @@ public class KSerialiseTest {
     private void test(K.KBase k) {
         try {
             K.KBase result = c.k(k);
-            assertEquals(k, result);
+            Assertions.assertEquals(k, result);
         } catch (kx.c.K4Exception|IOException e) {
-            fail(e);
+            Assertions.fail(e);
         }
     }
 

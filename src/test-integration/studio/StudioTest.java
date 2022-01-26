@@ -17,6 +17,7 @@ public class StudioTest extends AssertJSwingJUnitTestCase {
 
     @Override
     protected void onSetUp() {
+        System.setProperty("user.home", "/tmp/");
         Studio.init0();
         StudioPanel panel = GuiActionRunner.execute(() -> Studio.createPanel(new String[0]));
         Assert.assertNotEquals("panel is not null", null, panel);
