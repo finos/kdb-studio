@@ -9,6 +9,7 @@ import org.assertj.swing.junit.testcase.AssertJSwingJUnitTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 import studio.ui.StudioPanel;
+import studio.core.Studio;
 
 public class StudioTest extends AssertJSwingJUnitTestCase {
 
@@ -16,7 +17,8 @@ public class StudioTest extends AssertJSwingJUnitTestCase {
 
     @Override
     protected void onSetUp() {
-        StudioPanel panel = GuiActionRunner.execute(() -> StudioPanel.init(new String[0]));
+        Studio.init0();
+        StudioPanel panel = GuiActionRunner.execute(() -> Studio.createPanel(new String[0]));
         Assert.assertNotEquals("panel is not null", null, panel);
         window = new FrameFixture(robot(), panel.frame());
         window.show(); // shows the frame to test

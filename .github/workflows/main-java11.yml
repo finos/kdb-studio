@@ -27,11 +27,12 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-    - name: Build KDB Studio (with Gradle)
+    - name: Build
       uses: eskatos/gradle-command-action@v1
       with:
-        arguments: check install
-    # Runs a single command using the runners shell
+        arguments: install
+    - name: Test
+      run: ./test.sh
     - name: Show workspace
       run: find
     - name: Make release archive

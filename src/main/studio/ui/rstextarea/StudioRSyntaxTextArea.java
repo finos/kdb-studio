@@ -6,6 +6,7 @@ public class StudioRSyntaxTextArea extends RSyntaxTextArea {
 
     public StudioRSyntaxTextArea(String text) {
         super(text);
+        setName("qEditor");
     }
 
     @Override
