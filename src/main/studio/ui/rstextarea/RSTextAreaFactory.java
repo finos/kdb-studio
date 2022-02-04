@@ -1,11 +1,13 @@
 package studio.ui.rstextarea;
 
+import java.security.KeyStore;
 import org.fife.ui.rsyntaxtextarea.*;
 import org.fife.ui.rsyntaxtextarea.folding.CurlyFoldParser;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParserManager;
 import org.fife.ui.rtextarea.ClipboardHistory;
 import org.fife.ui.rtextarea.ConfigurableCaret;
 import org.fife.ui.rtextarea.RTextArea;
+import org.fife.ui.rtextarea.RTextAreaEditorKit;
 import org.fife.ui.rtextarea.RecordableTextAction;
 import studio.kdb.Config;
 import studio.qeditor.RSToken;
@@ -71,6 +73,8 @@ public class RSTextAreaFactory {
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_F,      defaultModifier), FindReplaceAction.findAction);
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_R,      defaultModifier), FindReplaceAction.replaceAction);
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE,      0), HideSearchPanelAction.action);
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_W, defaultModifier), new RTextAreaEditorKit.DeletePrevWordAction());
 
         UIManager.put("RSyntaxTextAreaUI.inputMap", inputMap);
 

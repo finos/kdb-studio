@@ -610,8 +610,8 @@ public class StudioPanel extends JPanel implements WindowListener {
         toggleDividerOrientationAction = UserAction.create(I18n.getString("ToggleDividerOrientation"),
                 "Toggle the window divider's orientation", KeyEvent.VK_C, null, e -> toggleDividerOrientation());
 
-        closeTabAction = UserAction.create("Close Tab", "Close current tab", KeyEvent.VK_W,
-                KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutKeyMask), e -> closeTab());
+        closeTabAction = UserAction.create("Close Tab", "Close current tab", KeyEvent.VK_F4,
+                KeyStroke.getKeyStroke(KeyEvent.VK_F4, menuShortcutKeyMask), e -> closeTab());
 
         closeFileAction = UserAction.create("Close Window", "Close current window (close all tabs)",
                 KeyEvent.VK_C, null, e -> closePanel());
