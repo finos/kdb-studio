@@ -3,11 +3,15 @@ package studio.core;
 import java.util.Properties;
 
 public interface IAuthenticationMechanism {
-    public String getMechanismName();
+    String getMechanismName();
 
-    public String[] getMechanismPropertyNames();
+    String[] getMechanismPropertyNames();
 
-    public void setProperties(Properties props);
+    void setProperties(Properties props);
 
-    public Credentials getCredentials();
+    Credentials getCredentials();
+
+    default long getExpiration() {
+        return Long.MAX_VALUE;
+    }
 }

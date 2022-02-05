@@ -112,10 +112,10 @@ public class c {
         closed = false;
     }
 
-    private String host;
-    private int port;
-    private String up;
-    private boolean useTLS;
+    private final String host;
+    private final int port;
+    private final String up;
+    private final boolean useTLS;
 
     public c(String h, int p, String u, boolean useTLS) {
         host = h;
