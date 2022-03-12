@@ -8,9 +8,9 @@ public enum ChartType {
     BAR("bar", false, false);
 
 
-    private String title;
-    private boolean line;
-    private boolean shape;
+    private final String title;
+    private final boolean line;
+    private final boolean shape;
 
 
     ChartType(String title, boolean line, boolean shape) {

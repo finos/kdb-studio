@@ -5,8 +5,8 @@ import java.awt.*;
 
 public class SquareIcon implements Icon {
 
-    private Paint color;
-    private int size;
+    private final Paint color;
+    private final int size;
 
     public SquareIcon(Paint color, int size) {
         this.color = color;

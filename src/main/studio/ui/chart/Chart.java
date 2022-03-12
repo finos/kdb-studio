@@ -94,7 +94,7 @@ public class Chart implements ComponentListener {
         regularTimePeriodConverters.put(K.KMinuteVector.class, v -> new Minute(((K.Minute)v).toDate()));
     }
 
-    private static StandardChartTheme currentTheme = new StandardChartTheme("JFree");
+    private static final StandardChartTheme currentTheme = new StandardChartTheme("JFree");
     static {
         currentTheme.setXYBarPainter(new StandardXYBarPainter());
     }
@@ -110,7 +110,7 @@ public class Chart implements ComponentListener {
         yIndex = new ArrayList<>();
         for (int index = 0; index<table.getColumnCount(); index++) {
             names.add(table.getColumnName(index));
-            Class clazz = table.getColumnClass(index);
+            Class<?> clazz = table.getColumnClass(index);
             if (domainKClass.contains(clazz)) xIndex.add(index);
             if (rangeKClass.contains(clazz)) yIndex.add(index);
         }
@@ -270,7 +270,7 @@ public class Chart implements ComponentListener {
         if (xAxis == null) return null;
 
         JFreeChart chart = new JFreeChart("", JFreeChart.DEFAULT_TITLE_FONT,
-                plot, false);
+                plot, true);
         currentTheme.apply(chart);
         return chart;
     }

@@ -11,27 +11,27 @@ import java.util.List;
 
 public class ChartConfigPanel extends Box implements ActionListener {
 
-    private Chart chart;
-    private List<String> names;
-    private List<Integer> xIndex;
-    private List<Integer> yIndex;
+    private final Chart chart;
+    private final List<String> names;
+    private final List<Integer> xIndex;
+    private final List<Integer> yIndex;
 
-    private JComboBox<ChartType> comboCharType;
-    private JComboBox<String> comboX;
-    private JCheckBox chkAll;
-    private JCheckBox[] chkY;
-    private LegendIcon[] icons;
-    private JPanel pnlLagend;
+    private final JComboBox<ChartType> comboCharType;
+    private final JComboBox<String> comboX;
+    private final JCheckBox chkAll;
+    private final JCheckBox[] chkY;
+    private final LegendIcon[] icons;
+    private final JPanel pnlLagend;
 
-    private JColorChooser colorChooser;
-    private LegendIcon colorChoosePreviewIcon;
+    private final JColorChooser colorChooser;
+    private final LegendIcon colorChoosePreviewIcon;
 
     private final static Border EMPTY_BORDER = BorderFactory.createEmptyBorder(2,0,2,0);
     private final static Border SELECTED_BORDER = BorderFactory.createEtchedBorder(EtchedBorder.LOWERED);
 
-    private static Paint[] colors = DefaultDrawingSupplier.DEFAULT_PAINT_SEQUENCE;
-    private static Shape[] shapes = DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE;
-    private static BasicStroke[] strokes = new BasicStroke[] {
+    private static final Paint[] colors = DefaultDrawingSupplier.DEFAULT_PAINT_SEQUENCE;
+    private static final Shape[] shapes = DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE;
+    private static final BasicStroke[] strokes = new BasicStroke[] {
             new BasicStroke(1f),
             new BasicStroke(1f,BasicStroke.CAP_BUTT,
                     BasicStroke.JOIN_BEVEL,1f,new float[] {10,10},0f
@@ -59,7 +59,7 @@ public class ChartConfigPanel extends Box implements ActionListener {
         }
     }
 
-    private static StrokeWidth[] strokeWidths = new StrokeWidth[] {
+    private static final StrokeWidth[] strokeWidths = new StrokeWidth[] {
             new StrokeWidth("x 1", 1),
             new StrokeWidth("x 1.5", 1.5f),
             new StrokeWidth("x 2", 2),
@@ -75,7 +75,7 @@ public class ChartConfigPanel extends Box implements ActionListener {
                 stroke.getMiterLimit(), stroke.getDashArray(), stroke.getDashPhase());
     }
 
-    private static BasicStroke defaultStroke = strokeWithWidth(strokes[0], 2f);
+    private static final BasicStroke defaultStroke = strokeWithWidth(strokes[0], 2f);
 
     public ChartConfigPanel(Chart chart, List<String> names, List<Integer> xIndex, List<Integer> yIndex) {
         super(BoxLayout.Y_AXIS);
