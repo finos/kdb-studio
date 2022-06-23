@@ -57,7 +57,7 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
                         addServerBeforeAction, addServerAfterAction,
                         addFolderBeforeAction, addFolderAfterAction,
                         pickUpAction, dropIntoAction, dropAboveAction, dropBelowAction,
-                        importFromJSONAction, exportToJSONAction;
+                        importFromJSONAction, exportToJSONAction, removeAllAction;
 
     public static final int DEFAULT_WIDTH = 300;
     public static final int DEFAULT_HEIGHT = 410;
@@ -362,6 +362,7 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
         menu.setMnemonic(KeyEvent.VK_F);
         menu.add(new JMenuItem(importFromJSONAction));
         menu.add(new JMenuItem(exportToJSONAction));
+        menu.add(new JMenuItem(removeAllAction));
         menubar.add(menu);
         setJMenuBar(menubar);
     }
@@ -394,9 +395,11 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
                 KeyEvent.VK_L, e -> dropNode(AddNodeLocation.AFTER));
 
         importFromJSONAction = UserAction.create("Import from JSON...", "Import server list from JSON",
-                KeyEvent.VK_I, e -> JSONServerList.importFromJSON(this, studioPanel));
+                KeyEvent.VK_I, e -> importFromJSON());
         exportToJSONAction = UserAction.create("Export to JSON...", "Export server list to JSON",
                 KeyEvent.VK_E, e -> JSONServerList.exportToJSON(this));
+        removeAllAction = UserAction.create("Remove All", "Remove all servers",
+                KeyEvent.VK_R, e -> removeAllServersWithConfirm());
 
         UserAction toggleAction = UserAction.create("toggle", e-> toggleTreeListView());
         UserAction focusTreeAction = UserAction.create("focus tree", e-> tree.requestFocusInWindow());
@@ -590,6 +593,29 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
         }
         addExistingNode(selNode, pickedUpNode, location);
         studioPanel.updateServerComboBox();
+    }
+
+    private void importFromJSON() {
+        JSONServerList.importFromJSON(this, studioPanel);
+        refreshServers();
+    }
+
+    private void removeAllServersWithConfirm() {
+        int choice = JOptionPane.showOptionDialog(studioPanel,
+                "Are you sure you want to remove ALL servers?",
+                "Remove all servers",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                Util.WARNING_ICON,
+                null, // use standard button titles
+                null);      // no default selection
+
+        if (choice == 0) {
+            Config.getInstance().removeAllServers();
+            //setRoot(null);
+            updateServerTree(null, null);
+            studioPanel.setServer(null);
+        }
     }
 
 }
