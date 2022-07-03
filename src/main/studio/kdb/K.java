@@ -851,7 +851,7 @@ public class K {
         public StringBuilder format(StringBuilder builder, KFormatContext context) {
             builder = super.format(builder, context);
             if (context.showType()) {
-                builder.append("\"").append(c).append("\"");
+                builder.append("\"").append(escape(c)).append("\"");
             } else {
                 builder.append(c);
             }
@@ -874,6 +874,19 @@ public class K {
                 return false;
             }
             return c == ((KCharacter) obj).c;
+        }
+
+        public static String escape(char ch) {
+            switch(ch) {
+                case '\000':
+                    return "\\000";
+                case '\"':
+                    return "\\\"";
+                case '\\':
+                    return "\\\\";
+                default:
+                    return String.valueOf(ch);
+            }
         }
     }
 
@@ -1924,6 +1937,8 @@ public class K {
 
         public KCharacterVector(String value) {
             super(value.toCharArray(), 10, "char", "c");
+            System.out.println("value="+value+" length="+value.length());
+            new Exception().printStackTrace();
         }
 
         public KCharacter at(int i) {
@@ -1938,17 +1953,21 @@ public class K {
         protected StringBuilder formatVector(StringBuilder builder, KFormatContext context) {
             if (getLength() == 1) {
                 char ch = Array.getChar(array, 0);
-                if (ch <= 255) {
+                if (ch <= 127) {    //for UTF-8, any char with code of 128 or above is encoded in multiple bytes
                     builder.append(enlist);
                 }
             }
 
             if (context.showType()) {
                 builder.append("\"");
-            }
-            builder.append(getString());
-            if (context.showType()) {
+                String str = getString();
+                for (int i=0; i<str.length(); ++i) {
+                    char ch = str.charAt(i);
+                    builder.append(KCharacter.escape(ch));
+                }
                 builder.append("\"");
+            } else {
+                builder.append(getString());
             }
             return builder;
         }
