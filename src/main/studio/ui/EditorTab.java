@@ -159,10 +159,14 @@ public class EditorTab implements FileWatcher.Listener {
 
     public void setServer(Server server) {
         this.server = server;
-        getTextArea().setBackground(server.getBackgroundColor());
-        if (server.equals(getServer())) return;
+        if (server != null) {
+            getTextArea().setBackground(server.getBackgroundColor());
+            if (server.equals(getServer())) return;
 
-        setStatus("Changed server: " + server.getDescription(true));
+            setStatus("Changed server: " + server.getDescription(true));
+        } else {
+            setStatus("No server selected");
+        }
     }
 
     public LineEnding getLineEnding() {

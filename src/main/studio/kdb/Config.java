@@ -457,6 +457,16 @@ public class Config {
             for (Enumeration<TreeNode> e = root.children(); e.hasMoreElements();) {
                 children.add(serverTreeToObj((ServerTreeNode) e.nextElement()));
             }
+        } else {
+            Server s = root.getServer();
+            result.put("name", s.getName());
+            result.put("host", s.getHost());
+            result.put("port", s.getPort());
+            result.put("username", s.getUsername());
+            result.put("password", s.getPassword());
+            result.put("useTls", s.getUseTLS());
+            result.put("authMethod", s.getAuthenticationMechanism());
+            result.put("color", colorToJSON(s.getBackgroundColor()));
         }
         return result;
     }
@@ -469,24 +479,29 @@ public class Config {
         return acolor;
     }
 
+    public Server serverFromJson(JsonNode serverNode) {
+        Server s = new Server();
+        if (serverNode.has("name")) s.setName(serverNode.get("name").asText(""));
+        if (serverNode.has("host")) s.setHost(serverNode.get("host").asText(""));
+        if (serverNode.has("port")) s.setPort(serverNode.get("port").asInt(0));
+        if (serverNode.has("username")) s.setUsername(serverNode.get("username").asText(""));
+        if (serverNode.has("password")) s.setPassword(serverNode.get("password").asText(""));
+        if (serverNode.has("useTls")) s.setUseTLS(serverNode.get("useTls").asBoolean(false));
+        if (serverNode.has("authMethod")) s.setAuthenticationMechanism(serverNode.get("authMethod").asText(""));
+        if (serverNode.has("color")) {
+            JsonNode color = serverNode.get("color");
+            if (color.isArray() && color.size() >= 3) {
+                s.setBackgroundColor(new Color(color.get(0).asInt(255),color.get(1).asInt(255),color.get(2).asInt(255)));
+            }
+        }
+        return s;
+    }
+
     public void exportServerListToJSON(File f) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         Map<String,Object> cfg = new LinkedHashMap<>();
-        ArrayList<Map<String,Object>> svs = new ArrayList<>();
-        for (Server s : servers.values()) {
-            LinkedHashMap<String,Object> ps = new LinkedHashMap<>();
-            svs.add(ps);
-            ps.put("name", s.getName());
-            ps.put("host", s.getHost());
-            ps.put("port", s.getPort());
-            ps.put("username", s.getUsername());
-            ps.put("password", s.getPassword());
-            ps.put("useTls", s.getUseTLS());
-            ps.put("authMethod", s.getAuthenticationMechanism());
-            ps.put("color", colorToJSON(s.getBackgroundColor()));
-        }
-        cfg.put("servers",svs);
+        cfg.put("version",2);
         cfg.put("serverTree", serverTreeToObj(serverTree));
         try {
             FileWriter sw = new FileWriter(f);
@@ -496,7 +511,7 @@ public class Config {
         }
     }
 
-    private void importServerTreeFromJSON(HashMap<String, Server> serverMap, boolean isRoot, JsonNode jn, ServerTreeNode tn) {
+    private void importServerTreeFromJSONv1(HashMap<String, Server> serverMap, boolean isRoot, JsonNode jn, ServerTreeNode tn) {
         if (jn.has("children")) {   //is a folder
             ServerTreeNode ntn = tn;
             if (!isRoot) {
@@ -510,7 +525,7 @@ public class Config {
             JsonNode children = jn.get("children");
             if (children.isArray()) {
                 for (JsonNode child : (Iterable<JsonNode>) ()->children.elements()) {
-                    importServerTreeFromJSON(serverMap, false, child, ntn);
+                    importServerTreeFromJSONv1(serverMap, false, child, ntn);
                 }
             }
         } else {
@@ -528,59 +543,103 @@ public class Config {
         }
     }
 
-    public String importServerListFromJSON(File f) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        StringBuilder sb = new StringBuilder();
+    private void importServerListFromJSONv1(JsonNode root, StringBuilder sb) {
         ArrayList<String> alreadyExist = new ArrayList<>();
         ArrayList<Integer> noName = new ArrayList<>();
+        if (!root.has("servers")) { sb.append("JSON root node doesn't have a \"servers\" property"); return; }
+        if (!root.has("serverTree")) { sb.append("JSON root node doesn't have a \"serverTree\" property"); return; }
+        JsonNode serversNode = root.get("servers");
+        JsonNode serverTreeNode = root.get("serverTree");
+        if (!serversNode.isArray()) { sb.append("\"servers\" node is not an array"); return; }
+        HashSet<String> existingServers = new HashSet<>();
+        for (Server s : servers.values()) existingServers.add(s.getName());
+        HashMap<String, Server> serverMap = new HashMap<>();
+        int i=0;
+        for (JsonNode serverNode : (Iterable<JsonNode>) ()->serversNode.elements()) {
+            if (!serverNode.isObject()) {
+                sb.append("Non-object found inside \"servers\" array at index "+i+"\n");
+            } else if (!serverNode.has("name")) {
+                sb.append("Server at index "+i+" has no name\n");
+            } else {
+                String sname = serverNode.get("name").asText();
+                if (sname.length() == 0) {
+                    noName.add(i);
+                } else if (existingServers.contains(sname)) {
+                    alreadyExist.add(sname);
+                } else {
+                    Server s = serverFromJson(serverNode);
+                    serverMap.put(sname, s);
+                }
+            }
+            ++i;
+        }
+        if (serverTreeNode.isObject()) {
+            importServerTreeFromJSONv1(serverMap, true, serverTreeNode, serverTree);
+        }
+        if (0<noName.size()) sb.append("The servers at the following indices have no names: "+noName+"\n");
+        if (0<alreadyExist.size()) sb.append("The following servers already exist and were not imported: "+alreadyExist+"\n");
+    }
+
+    private void importServerTreeFromJSONv2(boolean isRoot, JsonNode jn, ServerTreeNode tn) {
+        if (jn.has("children")) {   //is a folder
+            ServerTreeNode ntn = tn;
+            if (!isRoot) {
+                String folderName = jn.get("name").asText("");
+                ntn = tn.getChild(folderName);
+                if (ntn == null) {
+                    ntn = new ServerTreeNode(folderName);
+                    tn.add(ntn);
+                }
+            };
+            JsonNode children = jn.get("children");
+            if (children.isArray()) {
+                for (JsonNode child : (Iterable<JsonNode>) ()->children.elements()) {
+                    importServerTreeFromJSONv2(false, child, ntn);
+                }
+            }
+        } else {
+            if (jn.has("name")) {
+                String name = jn.get("name").asText("");
+                if (name.length() > 0) {
+                    Server s = serverFromJson(jn);
+                    s.setFolder(tn);
+                    addServer(s);
+                }
+            }
+        }
+    }
+
+    private void importServerListFromJSONv2(JsonNode root, StringBuilder sb) {
+        if (!root.has("serverTree")) { sb.append("JSON root node doesn't have a \"serverTree\" property"); return; }
+        JsonNode serverTreeNode = root.get("serverTree");
+        if (!serverTreeNode.isObject()) {
+            sb.append("serverTree is not an object");
+        }
+        importServerTreeFromJSONv2(true, serverTreeNode, serverTree);
+    }
+
+    public String importServerListFromJSON(File f) {
+        int version = 1;
+        ObjectMapper objectMapper = new ObjectMapper();
+        StringBuilder sb = new StringBuilder();
         try {
             JsonNode root = objectMapper.readTree(f);
             if (!root.isObject()) return "JSON root node is not an object";
-            if (!root.has("servers")) return "JSON root node doesn't have a \"servers\" property";
-            if (!root.has("serverTree")) return "JSON root node doesn't have a \"serverTree\" property";
-            JsonNode serversNode = root.get("servers");
-            JsonNode serverTreeNode = root.get("serverTree");
-            if (!serversNode.isArray()) return "\"servers\" node is not an array";
-            HashSet<String> existingServers = new HashSet<>();
-            for (Server s : servers.values()) existingServers.add(s.getName());
-            HashMap<String, Server> serverMap = new HashMap<>();
-            int i=0;
-            for (JsonNode serverNode : (Iterable<JsonNode>) ()->serversNode.elements()) {
-                if (!serverNode.isObject()) {
-                    sb.append("Non-object found inside \"servers\" array at index "+i+"\n");
-                } else if (!serverNode.has("name")) {
-                    sb.append("Server at index "+i+" has no name\n");
-                } else {
-                    String sname = serverNode.get("name").asText();
-                    if (sname.length() == 0) {
-                        noName.add(i);
-                    } else if (existingServers.contains(sname)) {
-                        alreadyExist.add(sname);
-                    } else {
-                        Server s = new Server();
-                        s.setName(sname);
-                        if (serverNode.has("host")) s.setHost(serverNode.get("host").asText(""));
-                        if (serverNode.has("port")) s.setPort(serverNode.get("port").asInt(0));
-                        if (serverNode.has("username")) s.setUsername(serverNode.get("username").asText(""));
-                        if (serverNode.has("password")) s.setPassword(serverNode.get("password").asText(""));
-                        if (serverNode.has("useTls")) s.setUseTLS(serverNode.get("useTls").asBoolean(false));
-                        if (serverNode.has("authMethod")) s.setAuthenticationMechanism(serverNode.get("authMethod").asText(""));
-                        if (serverNode.has("color")) {
-                            JsonNode color = serverNode.get("color");
-                            if (color.isArray() && color.size() >= 3) {
-                                s.setBackgroundColor(new Color(color.get(0).asInt(255),color.get(1).asInt(255),color.get(2).asInt(255)));
-                            }
-                        }
-                        serverMap.put(sname, s);
-                    }
-                }
-                ++i;
+            if (root.has("version")) {
+                JsonNode versionNode = root.get("version");
+                if (!versionNode.isInt()) return "version is not an integer";
+                version = versionNode.intValue();
             }
-            if (serverTreeNode.isObject()) {
-                importServerTreeFromJSON(serverMap, true, serverTreeNode, serverTree);
+            switch(version) {
+                case 1:
+                    importServerListFromJSONv1(root, sb);
+                    break;
+                case 2:
+                    importServerListFromJSONv2(root, sb);
+                    break;
+                default:
+                    return "unsupported version: "+version;
             }
-            if (0<noName.size()) sb.append("The servers at the following indices have no names: "+noName);
-            if (0<alreadyExist.size()) sb.append("The following servers already exist and were not imported: "+alreadyExist);
         } catch(IOException e) {
             return e.toString();
         }
@@ -881,7 +940,6 @@ public class Config {
         servers.put(fullName, server);
         serverNames.add(fullName);
     }
-
 
     public void addServer(Server server) {
         addServers(false, server);
