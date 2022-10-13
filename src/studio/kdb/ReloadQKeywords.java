@@ -9,6 +9,7 @@ public class ReloadQKeywords {
 
                 try {
                     c = ConnectionPool.getInstance().leaseConnection(server);
+                    if (c == null) return;
                     ConnectionPool.getInstance().checkConnected(c);
                     c.k(new K.KCharacterVector("key`.q"));
                     r = c.getResponse();

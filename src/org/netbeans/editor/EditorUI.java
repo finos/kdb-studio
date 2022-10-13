@@ -695,6 +695,10 @@ public class EditorUI implements ChangeListener, PropertyChangeListener, Setting
         return (Coloring)getColoringMap().get(SettingsNames.DEFAULT_COLORING);
     }
 
+    public void setDefaultColoring(Coloring c) {
+        getColoringMap().put(SettingsNames.DEFAULT_COLORING, c);
+    }
+
     public Coloring getColoring(String coloringName) {
         return (Coloring)getColoringMap().get(coloringName);
     }

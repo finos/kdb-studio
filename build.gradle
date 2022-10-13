@@ -9,16 +9,15 @@ compileJava {
 }
 
 repositories {
-//    maven { url 'http://mvnrepository.com/maven2' }
-//    maven { url 'https://repo1.maven.org/maven2' }
     mavenCentral()
 }
 
 dependencies {
     compile group: 'org.netbeans.api', name: 'org-openide-awt', version: 'RELEASE113'
-//    compile group: 'org.jfree', name: 'jfreechart', version: '1.0.13'
     compile group: 'org.jfree', name: 'jfreechart', version: '1.0.14'
-    runtime files ('lib/images.jar')
+    compile group: 'org.apache.poi', name: 'poi', version: '4.1.2'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '4.1.2'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.11.2'
 }
 
 sourceSets {
@@ -30,10 +29,17 @@ sourceSets {
             srcDir 'src'
             include 'studio*.properties'
             include 'org/netbeans/editor/Bundle*.properties'
+            include 'images/**'
         }
     }
 }
 
 application {
     mainClassName = 'studio.core.Studio'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'studio.core.Studio'
+    }
 }

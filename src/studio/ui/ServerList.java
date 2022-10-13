@@ -9,24 +9,29 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.function.*;
 import java.util.HashSet;
 import java.util.StringTokenizer;
 
 public class ServerList extends EscapeDialog implements TreeExpansionListener  {
 
+    private StudioPanel studioPanel;
     private JPanel contentPane;
     private JTree tree;
     private DefaultTreeModel treeModel;
     private JTextField filter;
     private JToggleButton tglBtnBoxTree;
+    private JMenuBar menubar;
     private boolean ignoreExpansionListener = false;
     private java.util.Set<TreePath> expandedPath = new HashSet<>();
     private java.util.Set<TreePath> collapsedPath = new HashSet<>();
@@ -34,21 +39,25 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
     private Server selectedServer;
     private Server activeServer;
     private ServerTreeNode serverTree, root;
+    private ServerTreeNode pickedUpNode = null;
 
     private JPopupMenu popupMenu;
     private UserAction selectAction, removeAction,
                         insertFolderAction, insertServerAction,
                         addServerBeforeAction, addServerAfterAction,
-                        addFolderBeforeAction, addFolderAfterAction;
+                        addFolderBeforeAction, addFolderAfterAction,
+                        pickUpAction, dropIntoAction, dropAboveAction, dropBelowAction,
+                        importFromJSONAction, exportToJSONAction;
 
     public final static int DEFAULT_WIDTH = 300;
-    public final static int DEFAULT_HEIGHT = 400;
+    public final static int DEFAULT_HEIGHT = 410;
 
     private final static int menuShortcutKeyMask = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
     private final KeyStroke TREE_VIEW_KEYSTROKE = KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutKeyMask);
 
-    public ServerList(JFrame parent) {
+    public ServerList(JFrame parent, StudioPanel studioPanel) {
         super(parent, "Server List");
+        this.studioPanel = studioPanel;
         initComponents();
     }
 
@@ -228,8 +237,17 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
         };
         tree.setRootVisible(false);
         tree.setEditable(false);
+        tree.setDragEnabled(true);
+        //tree.setDropMode(DropMode.ON_OR_INSERT);
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         tree.addTreeExpansionListener(this);
+        tree.setTransferHandler(new TransferHandler() {
+            @Override
+            public boolean canImport(TransferHandler.TransferSupport support) {
+                System.out.println("Support="+support);
+                return false;
+            }
+        });
         tree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -259,9 +277,9 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
                 refreshServers();
             }
         });
-        tglBtnBoxTree = new JToggleButton(Util.TEXT_TREE_ICON);
+        tglBtnBoxTree = new JToggleButton(Util.SERVER_TREE_ICON);
         tglBtnBoxTree.setToolTipText("<html>Toggle tree/list <small>" + Util.getAcceleratorString(TREE_VIEW_KEYSTROKE) +"</small></html>");
-        tglBtnBoxTree.setSelectedIcon(Util.TEXT_ICON);
+        tglBtnBoxTree.setSelectedIcon(Util.SERVER_LIST_ICON);
         tglBtnBoxTree.setFocusable(false);
         tglBtnBoxTree.addActionListener(e->refreshServers());
         JToolBar toolbar = new JToolBar();
@@ -281,6 +299,14 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
 
         initActions();
         initPopupMenu();
+
+        JMenuBar menubar = new JMenuBar();
+        JMenu menu = new JMenu(I18n.getString("File"));
+        menu.setMnemonic(KeyEvent.VK_F);
+        menu.add(new JMenuItem(importFromJSONAction));
+        menu.add(new JMenuItem(exportToJSONAction));
+        menubar.add(menu);
+        setJMenuBar(menubar);
     }
 
     private void initActions() {
@@ -300,6 +326,20 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
                 KeyEvent.VK_B, e -> addNode(true, AddNodeLocation.BEFORE));
         addFolderAfterAction = UserAction.create("Add Folder After", "Add Folder after selected node",
                 KeyEvent.VK_A, e -> addNode(true, AddNodeLocation.AFTER));
+
+        pickUpAction = UserAction.create("Pick up", "Pick up node for move",
+                KeyEvent.VK_P, e -> pickUpNode());
+        dropIntoAction = UserAction.create("Drop Into", "Move node into the folder",
+                KeyEvent.VK_D, e -> dropNode(AddNodeLocation.INSERT));
+        dropAboveAction = UserAction.create("Drop Above", "Move node above selected node",
+                KeyEvent.VK_O, e -> dropNode(AddNodeLocation.BEFORE));
+        dropBelowAction = UserAction.create("Drop Below", "Move node below selected node",
+                KeyEvent.VK_L, e -> dropNode(AddNodeLocation.AFTER));
+
+        importFromJSONAction = UserAction.create("Import from JSON...", "Import server list from JSON",
+                KeyEvent.VK_I, e -> importFromJSON());
+        exportToJSONAction = UserAction.create("Export to JSON...", "Export server list to JSON",
+                KeyEvent.VK_E, e -> exportToJSON());
 
         UserAction toggleAction = UserAction.create("toggle", e-> toggleTreeListView());
         UserAction focusTreeAction = UserAction.create("focus tree", e-> tree.requestFocusInWindow());
@@ -335,10 +375,18 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
             addServerBeforeAction.setEnabled(false);
             addServerAfterAction.setEnabled(false);
             removeAction.setEnabled(false);
+            pickUpAction.setEnabled(false);
+            dropIntoAction.setEnabled(false);
+            dropAboveAction.setEnabled(false);
+            dropBelowAction.setEnabled(false);
         } else {
             boolean isFolder = ((ServerTreeNode) path.getLastPathComponent()).isFolder();
+            boolean canDrop = pickedUpNode != null;
             insertServerAction.setEnabled(isFolder);
             insertFolderAction.setEnabled(isFolder);
+            dropIntoAction.setEnabled(isFolder && canDrop);
+            dropAboveAction.setEnabled(canDrop);
+            dropBelowAction.setEnabled(canDrop);
         }
 
         popupMenu.show(tree, x, y);
@@ -357,6 +405,11 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
         popupMenu.add(addServerAfterAction);
         popupMenu.add(new JSeparator());
         popupMenu.add(removeAction);
+        popupMenu.add(new JSeparator());
+        popupMenu.add(pickUpAction);
+        popupMenu.add(dropIntoAction);
+        popupMenu.add(dropAboveAction);
+        popupMenu.add(dropBelowAction);
     }
 
     private void removeNode() {
@@ -380,9 +433,40 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
         TreePath treePath = new TreePath(path);
         tree.scrollPathToVisible(treePath);
         tree.setSelectionPath(treePath);
+        if (node == pickedUpNode) pickedUpNode = null;
     }
 
     private enum AddNodeLocation {INSERT, BEFORE, AFTER};
+
+    private void addExistingNode(ServerTreeNode target, ServerTreeNode newNode, AddNodeLocation location) {
+        ServerTreeNode parent = location == AddNodeLocation.INSERT ? target : (ServerTreeNode)target.getParent();
+        int index;
+        if (location == AddNodeLocation.INSERT) {
+            index = target.getChildCount();
+        } else {
+            index = parent.getIndex(target);
+            if (location == AddNodeLocation.AFTER) index++;
+        }
+
+        parent.insert(newNode, index);
+        try {
+            Config.getInstance().setServerTree(serverTree);
+        } catch (IllegalArgumentException exception) {
+            serverTree = Config.getInstance().getServerTree();
+            System.err.println("Error adding new node: " + exception);
+            exception.printStackTrace(System.err);
+            JOptionPane.showMessageDialog(this, "Error adding new node:\n" + exception.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+
+        }
+        refreshServers();
+
+        ServerTreeNode selNode = root.findPath(newNode.getPath());
+        if (selNode != null) {
+            TreePath treePath = new TreePath(selNode.getPath());
+            tree.scrollPathToVisible(treePath);
+            tree.setSelectionPath(treePath);
+        }
+    }
 
     private void addNode(boolean folder, AddNodeLocation location) {
         ServerTreeNode selNode  = (ServerTreeNode) tree.getLastSelectedPathComponent();
@@ -408,33 +492,125 @@ public class ServerList extends EscapeDialog implements TreeExpansionListener  {
             server.setFolder(parent);
             newNode = new ServerTreeNode(server);
         }
+        addExistingNode(node, newNode, location);
+    }
 
-        int index;
-        if (location == AddNodeLocation.INSERT) {
-            index = node.getChildCount();
-        } else {
-            index = parent.getIndex(node);
-            if (location == AddNodeLocation.AFTER) index++;
+    private void pickUpNode() {
+        pickedUpNode = (ServerTreeNode) tree.getLastSelectedPathComponent();
+    }
+    private void dropNode(AddNodeLocation location) {
+        if (pickedUpNode == null) return;
+        ServerTreeNode selNode  = (ServerTreeNode) tree.getLastSelectedPathComponent();
+        if (selNode == pickedUpNode) {
+            JOptionPane.showMessageDialog(this,"Cannot move a node relative to itself.","Error",JOptionPane.ERROR_MESSAGE,Util.ERROR_ICON);
+            return;
         }
-
-        parent.insert(newNode, index);
-        try {
-            Config.getInstance().setServerTree(serverTree);
-        } catch (IllegalArgumentException exception) {
-            serverTree = Config.getInstance().getServerTree();
-            System.err.println("Error adding new node: " + exception);
-            exception.printStackTrace(System.err);
-            JOptionPane.showMessageDialog(this, "Error adding new node:\n" + exception.toString(), "Error", JOptionPane.ERROR_MESSAGE);
-
+        if (pickedUpNode.isFolder()) {
+            ServerTreeNode dropTarget = location == AddNodeLocation.INSERT ? selNode : (ServerTreeNode) selNode.getParent();
+            while (dropTarget != root) {
+                if (dropTarget == pickedUpNode) {
+                    JOptionPane.showMessageDialog(this,"Cannot move a folder into itself.","Error",JOptionPane.ERROR_MESSAGE,Util.ERROR_ICON);
+                    return;
+                }
+                dropTarget = (ServerTreeNode) dropTarget.getParent();
+            }
         }
-        refreshServers();
+        addExistingNode(selNode, pickedUpNode, location);
+    }
 
-        selNode = root.findPath(newNode.getPath());
-        if (selNode != null) {
-            TreePath treePath = new TreePath(selNode.getPath());
-            tree.scrollPathToVisible(treePath);
-            tree.setSelectionPath(treePath);
+    private void fileDialog(String title, boolean isSave, Consumer<File> fileOp) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogType(isSave ? JFileChooser.SAVE_DIALOG : JFileChooser.OPEN_DIALOG);
+        chooser.setDialogTitle(title);
+        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+        FileFilter ff =
+            new FileFilter() {
+                public String getDescription() {
+                    return "JSON";
+                }
+
+                public boolean accept(File file) {
+                    if (file.isDirectory() || file.getName().endsWith(".json"))
+                        return true;
+                    else
+                        return false;
+                }
+            };
+
+        chooser.addChoosableFileFilter(ff);
+        chooser.setFileFilter(ff);
+
+        int option = isSave?
+                   chooser.showSaveDialog(this) :
+                   chooser.showOpenDialog(this);
+
+        if (option == JFileChooser.APPROVE_OPTION) {
+            File sf = chooser.getSelectedFile();
+            File f = chooser.getCurrentDirectory();
+            String dir = f.getAbsolutePath();
+
+            try {
+                String filename = dir + "/" + sf.getName();
+                sf = new File(filename);
+
+                if (isSave) {
+                    if (sf.exists()) {
+                        int choice = JOptionPane.showOptionDialog(this,
+                                                                  filename + " already exists.\nOverwrite?",
+                                                                  "Overwrite?",
+                                                                  JOptionPane.YES_NO_CANCEL_OPTION,
+                                                                  JOptionPane.QUESTION_MESSAGE,
+                                                                  Util.QUESTION_ICON,
+                                                                  null, // use standard button titles
+                                                                  null);      // no default selection
+
+                        if (choice != JOptionPane.YES_OPTION)
+                            return;
+                    }
+                } else {
+                    if (!sf.exists()) {
+                        JOptionPane.showMessageDialog(this,
+                                              "File not found: "+sf,
+                                              "Error",
+                                              JOptionPane.ERROR_MESSAGE,
+                                              Util.ERROR_ICON);
+                        return;
+                    }
+                }
+                fileOp.accept(sf);
+            }
+            catch (Exception e) {
+                e.printStackTrace(System.err);
+                JOptionPane.showMessageDialog(this,
+                                              "Error while exporting server list:\n" + e,
+                                              "Studio for kdb+",
+                                              JOptionPane.ERROR_MESSAGE,
+                                              Util.ERROR_ICON);
+            }
         }
+    }
+
+    public void exportToJSON() {
+        fileDialog("Export server list as",
+                   true,
+                   file->Config.getInstance().exportServerListToJSON(file));
+    }
+
+    public void importFromJSON() {
+        fileDialog("Import server list from",
+                   false,
+                   file->{
+                        String errors = Config.getInstance().importServerListFromJSON(file);
+                        if (0<errors.length())
+                            JOptionPane.showMessageDialog(this,
+                                              "Error while importing server list:\n" + errors,
+                                              "Studio for kdb+",
+                                              JOptionPane.ERROR_MESSAGE,
+                                              Util.ERROR_ICON);
+                        updateServerTree(Config.getInstance().getServerTree(), selectedServer);
+                        studioPanel.updateServerComboBox();
+                   });
     }
 
 }

@@ -44,7 +44,9 @@ public class ConnectionPool {
 
         if (c == null) {
             try {
-                Class<?> clazz = AuthenticationManager.getInstance().lookup(s.getAuthenticationMechanism());
+                String mech = s.getAuthenticationMechanism();
+                Class<?> clazz = AuthenticationManager.getInstance().lookup(mech);
+                if(clazz == null) throw new RuntimeException("Can't find authentication mechanism: "+mech);
                 IAuthenticationMechanism authenticationMechanism = (IAuthenticationMechanism) clazz.newInstance();
 
                 authenticationMechanism.setProperties(s.getAsProperties());
@@ -89,6 +91,7 @@ public class ConnectionPool {
     }
 
     public void checkConnected(kx.c c) throws IOException,K4Exception {
+        if (c == null) return;
         if (c.isClosed())
             c.reconnect(true);
     }

@@ -14,6 +14,10 @@ public class SettingsDialog extends EscapeDialog {
     private JTextField txtUser;
     private JPasswordField txtPassword;
     private JCheckBox chBoxShowServerCombo;
+    private JComboBox cbFontName;
+    private JSpinner spnFontSize;
+    private JRadioButton rbLineEndingCRLF;
+    private JRadioButton rbLineEndingLF;
     private JButton btnOk;
     private JButton btnCancel;
 
@@ -48,6 +52,20 @@ public class SettingsDialog extends EscapeDialog {
         chBoxShowServerCombo.setSelected(Config.getInstance().isShowServerComboBox());
     }
 
+    public String getFontName() {
+        return cbFontName.getSelectedItem().toString();
+    }
+
+    public int getFontSize() {
+        return (Integer)spnFontSize.getValue();
+    }
+
+    public String getLineEnding() {
+        if (rbLineEndingCRLF.isSelected()) return "CRLF";
+        else if (rbLineEndingLF.isSelected()) return "LF";
+        else return "";
+    }
+
     @Override
     public void align() {
         super.align();
@@ -68,6 +86,23 @@ public class SettingsDialog extends EscapeDialog {
         JLabel lblUser = new JLabel("  User:");
         JLabel lblPassword = new JLabel("  Password:");
 
+        JLabel lblFontSize = new JLabel("Font:");
+        spnFontSize = new JSpinner(new SpinnerNumberModel(Config.getInstance().getFontSize(), 8, 72, 1));
+
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        cbFontName = new JComboBox(ge.getAvailableFontFamilyNames());
+        cbFontName.getModel().setSelectedItem(Config.getInstance().getFontName());
+
+        JLabel lblLineEnding = new JLabel("Line ending:");
+        rbLineEndingCRLF = new JRadioButton("Windows (CR+LF)");
+        rbLineEndingLF = new JRadioButton("UNIX (LF)");
+        ButtonGroup group = new ButtonGroup();
+        group.add(rbLineEndingCRLF);
+        group.add(rbLineEndingLF);
+        String lineEnding = Config.getInstance().getLineEnding();
+        if (lineEnding.equals("CRLF")) rbLineEndingCRLF.setSelected(true);
+        else if (lineEnding.equals("LF")) rbLineEndingLF.setSelected(true);
+
         Component glue = Box.createGlue();
         Component glue1 = Box.createGlue();
 
@@ -86,22 +121,34 @@ public class SettingsDialog extends EscapeDialog {
 
         layout.setHorizontalGroup(
                 layout.createParallelGroup()
-                        .addComponent(chBoxShowServerCombo)
-                        .addGroup(
-                            layout.createSequentialGroup()
-                                        .addComponent(lblAuthMechanism)
-                                        .addComponent(comboBoxAuthMechanism, PREFERRED_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
-                                        .addComponent(lblUser)
-                                        .addComponent(txtUser, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
-                                        .addComponent(lblPassword)
-                                        .addComponent(txtPassword, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
-                        ).addComponent(glue)
-                        .addGroup(
-                            layout.createSequentialGroup()
-                                    .addComponent(glue1)
-                                    .addComponent(btnOk)
-                                    .addComponent(btnCancel)
-                        )
+                    .addComponent(chBoxShowServerCombo)
+                    .addGroup(
+                        layout.createSequentialGroup()
+                                    .addComponent(lblAuthMechanism)
+                                    .addComponent(comboBoxAuthMechanism, PREFERRED_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
+                                    .addComponent(lblUser)
+                                    .addComponent(txtUser, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
+                                    .addComponent(lblPassword)
+                                    .addComponent(txtPassword, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
+                    ).addComponent(glue)
+                    .addGroup(
+                        layout.createSequentialGroup()
+                                .addComponent(lblFontSize)
+                                .addComponent(spnFontSize, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
+                                .addComponent(cbFontName, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
+                    )
+                    .addGroup(
+                        layout.createSequentialGroup()
+                                .addComponent(lblLineEnding)
+                                .addComponent(rbLineEndingCRLF, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
+                                .addComponent(rbLineEndingLF, FIELD_SIZE, FIELD_SIZE, FIELD_SIZE)
+                    )
+                    .addGroup(
+                        layout.createSequentialGroup()
+                                .addComponent(glue1)
+                                .addComponent(btnOk)
+                                .addComponent(btnCancel)
+                    )
         );
 
 
@@ -117,6 +164,18 @@ public class SettingsDialog extends EscapeDialog {
                                 .addComponent(lblPassword)
                                 .addComponent(txtPassword)
                     ).addComponent(glue)
+                    .addGroup(
+                        layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(lblFontSize)
+                                .addComponent(spnFontSize)
+                                .addComponent(cbFontName)
+                    )
+                    .addGroup(
+                        layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(lblLineEnding)
+                                .addComponent(rbLineEndingCRLF)
+                                .addComponent(rbLineEndingLF)
+                    )
                     .addGroup(
                         layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                                 .addComponent(glue1)

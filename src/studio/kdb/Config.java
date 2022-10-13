@@ -15,6 +15,9 @@ import java.awt.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 
 public class Config {
     private final static String PATH = System.getProperties().getProperty("user.home") + "/.studioforkdb/";
@@ -33,9 +36,33 @@ public class Config {
         init();
     }
 
+    public String getLineEnding() {
+        String r = p.getProperty("lineEnding", "");
+        if (r.length() == 0) {
+            String ls = System.getProperty("line.separator");
+            if (ls.equals("\n")) r = "LF";
+            else if (ls.equals("\r\n")) r = "CRLF";
+            else throw new RuntimeException("unknown line separator setting");
+        }
+        return r;
+    }
+
+    public void setLineEnding(String v) {
+        p.setProperty("lineEnding", v);
+        save();
+    }
+
+    public String getFontName() {
+        return p.getProperty("font.name", "Monospaced");
+    }
+
+    public int getFontSize() {
+        return Integer.parseInt(p.getProperty("font.size","14"));
+    }
+
     public Font getFont() {
-        String name = p.getProperty("font.name", "Monospaced");
-        int  size = Integer.parseInt(p.getProperty("font.size","14"));
+        String name = getFontName();
+        int  size = getFontSize();
 
         Font f = new Font(name, Font.PLAIN, size);
         setFont(f);
@@ -94,13 +121,41 @@ public class Config {
             return;
         }
 
-        try {
-            InputStream in = Files.newInputStream(file);
-            p.load(in);
-            in.close();
-        } catch (IOException e) {
-            System.err.println("Cant't read configuration from file " + FILENAME);
-            e.printStackTrace(System.err);
+        if (!Files.exists(file) && System.getProperty("os.name").startsWith("Windows")) {
+            System.out.println("Config not found in userprofile. Trying legacy path.");
+            //Old Java versions returned a different place for user.home on Windows.
+            //A user upgrading from such old directory would suddenly "lose" their config.
+            String oldpath = null;
+            try {
+                Process process = Runtime.getRuntime().exec("reg query \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders\" /v Desktop");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                String line = null;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("Desktop") && line.contains("REG_SZ")) {
+                        //    Desktop    REG_SZ    \\path\to\Desktop
+                        String[] tokens = line.split("[ \t]");
+                        int tc=0;
+                        for (int i=0; i<tokens.length; ++i) {
+                            if (tokens[i].length() > 0) ++tc;
+                            if (tc==3) oldpath = tokens[i];
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                //ignore
+            }
+            System.out.println("Old path: "+oldpath);
+            if (oldpath != null) file = Paths.get(oldpath.substring(0,oldpath.lastIndexOf('\\'))+"\\.studioforkdb\\studio.properties");
+        }
+        if (Files.exists(file)) {
+            try {
+                InputStream in = Files.newInputStream(file);
+                p.load(in);
+                in.close();
+            } catch (IOException e) {
+                System.err.println("Cant't read configuration from file " + FILENAME);
+                e.printStackTrace(System.err);
+            }
         }
         initServers();
     }
@@ -116,6 +171,148 @@ public class Config {
             System.err.println("Can't save configuration to " + FILENAME);
             e.printStackTrace(System.err);  //To change body of catch statement use Options | File Templates.
         }
+    }
+
+    public Object serverTreeToObj(ServerTreeNode root) {
+        //converts the server tree to an object that can be saved into JSON
+        LinkedHashMap<String,Object> result = new LinkedHashMap<>();
+        result.put("name", root.getName());
+        if(root.isFolder()) {
+            ArrayList<Object> children = new ArrayList<>();
+            result.put("children", children);
+            for (Enumeration<ServerTreeNode> e = root.children(); e.hasMoreElements();) {
+                children.add(serverTreeToObj(e.nextElement()));
+            }
+        }
+        return result;
+    }
+
+    public void exportServerListToJSON(File f) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        Map<String,Object> cfg = new LinkedHashMap<>();
+        ArrayList<Map<String,Object>> svs = new ArrayList<>();
+        for (Server s : servers.values()) {
+            LinkedHashMap<String,Object> ps = new LinkedHashMap<>();
+            svs.add(ps);
+            ps.put("name", s.getName());
+            ps.put("host", s.getHost());
+            ps.put("port", s.getPort());
+            ps.put("username", s.getUsername());
+            ps.put("password", s.getPassword());
+            ps.put("useTls", s.getUseTLS());
+            ps.put("authMethod", s.getAuthenticationMechanism());
+            ArrayList<Integer> color = new ArrayList<>(3);
+            Color bgc = s.getBackgroundColor();
+            color.add(bgc.getRed());
+            color.add(bgc.getGreen());
+            color.add(bgc.getBlue());
+            ps.put("color", color);
+        }
+        cfg.put("servers",svs);
+        cfg.put("serverTree", serverTreeToObj(serverTree));
+        try {
+            FileWriter sw = new FileWriter(f);
+            objectMapper.writeValue(sw, cfg);
+        } catch(IOException e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    private void importServerTreeFromJSON(HashMap<String, Server> serverMap, boolean isRoot, JsonNode jn, ServerTreeNode tn) {
+        if (jn.has("children")) {   //is a folder
+            ServerTreeNode ntn = tn;
+            if (!isRoot) {
+                String folderName = jn.get("name").asText("");
+                ntn = tn.getChild(folderName);
+                if (ntn == null) {
+                    ntn = new ServerTreeNode(folderName);
+                    tn.add(ntn);
+                }
+            };
+            JsonNode children = jn.get("children");
+            if (children.isArray()) {
+                for (JsonNode child : (Iterable<JsonNode>) ()->children.elements()) {
+                    importServerTreeFromJSON(serverMap, false, child, ntn);
+                }
+            }
+        } else {
+            if (jn.has("name")) {
+                String name = jn.get("name").asText("");
+                if (name.length() > 0) {
+                    if (serverMap.containsKey(name)) {
+                        Server s = serverMap.get(name);
+                        s.setFolder(tn);
+                        addServer(s);
+                        serverMap.remove(s);
+                    }
+                }
+            }
+        }
+    }
+
+    public String importServerListFromJSON(File f) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        StringBuilder sb = new StringBuilder();
+        ArrayList<String> alreadyExist = new ArrayList<>();
+        ArrayList<Integer> noName = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(f);
+            if (!root.isObject()) return "JSON root node is not an object";
+            if (!root.has("servers")) return "JSON root node doesn't have a \"servers\" property";
+            if (!root.has("serverTree")) return "JSON root node doesn't have a \"serverTree\" property";
+            JsonNode serversNode = root.get("servers");
+            JsonNode serverTreeNode = root.get("serverTree");
+            if (!serversNode.isArray()) return "\"servers\" node is not an array";
+            HashSet<String> existingServers = new HashSet<>();
+            for (Server s : servers.values()) existingServers.add(s.getName());
+            HashMap<String, Server> serverMap = new HashMap<>();
+            int i=0;
+            for (JsonNode serverNode : (Iterable<JsonNode>) ()->serversNode.elements()) {
+                if (!serverNode.isObject()) {
+                    sb.append("Non-object found inside \"servers\" array at index "+i+"\n");
+                } else if (!serverNode.has("name")) {
+                    sb.append("Server at index "+i+" has no name\n");
+                } else {
+                    String sname = serverNode.get("name").asText();
+                    if (sname.length() == 0) {
+                        noName.add(i);
+                    } else if (existingServers.contains(sname)) {
+                        alreadyExist.add(sname);
+                    } else {
+                        Server s = new Server();
+                        s.setName(sname);
+                        if (serverNode.has("host")) s.setHost(serverNode.get("host").asText(""));
+                        if (serverNode.has("port")) s.setPort(serverNode.get("port").asInt(0));
+                        if (serverNode.has("username")) s.setUsername(serverNode.get("username").asText(""));
+                        if (serverNode.has("password")) s.setPassword(serverNode.get("password").asText(""));
+                        if (serverNode.has("useTls")) s.setUseTLS(serverNode.get("useTls").asBoolean(false));
+                        if (serverNode.has("authMethod")) s.setAuthenticationMechanism(serverNode.get("authMethod").asText(""));
+                        if (serverNode.has("color")) {
+                            JsonNode color = serverNode.get("color");
+                            if (color.isArray() && color.size() >= 3) {
+                                s.setBackgroundColor(new Color(color.get(0).asInt(255),color.get(1).asInt(255),color.get(2).asInt(255)));
+                            }
+                        }
+                        serverMap.put(sname, s);
+                    }
+                }
+                ++i;
+            }
+            if (serverTreeNode.isObject()) {
+                importServerTreeFromJSON(serverMap, true, serverTreeNode, serverTree);
+            }
+            if (0<noName.size()) sb.append("The servers at the following indices have no names: "+noName);
+            if (0<alreadyExist.size()) sb.append("The following servers already exist and were not imported: "+alreadyExist);
+        } catch(IOException e) {
+            return e.toString();
+        }
+        int i = 0;
+        final int wordLength = 150;
+        while (i + wordLength < sb.length() && (i = sb.lastIndexOf(" ", i + wordLength)) != -1) {
+            sb.replace(i, i + 1, "\n");
+        }
+        return sb.toString();
     }
 
     // "".split(",") return {""}; we need to get zero length array
@@ -310,7 +507,7 @@ public class Config {
     private void convertFromOldVerion() {
         try {
             System.out.println("Found old config. Converting...");
-            String[] names = p.getProperty("Servers").split(",");
+            String[] names = p.getProperty("Servers","").split(",");
             List<Server> list = new ArrayList<>();
             for (String name : names) {
                 Server server = initServerFromKey(name);
@@ -330,7 +527,7 @@ public class Config {
     }
 
     private void initServers() {
-        if (p.getProperty("version").equals(OLD_VERSION)) {
+        if (p.getProperty("version","").equals(OLD_VERSION)) {
             convertFromOldVerion();
         }
         serverNames = new ArrayList<>();
@@ -430,12 +627,13 @@ public class Config {
         if (name.trim().length() == 0) {
             throw new IllegalArgumentException("Server name can't be empty");
         }
-        if (name.contains(",")) {
-            throw new IllegalArgumentException("Server name can't contains ,");
-        }
-        if (name.contains("/")) {
-            throw new IllegalArgumentException("Server name can't contains /");
-        }
+        //this would break if the user's config happened to contain these characters, causing them to lose their config
+        //if (name.contains(",")) {
+        //    throw new IllegalArgumentException("Server name can't contain ,");
+        //}
+        //if (name.contains("/")) {
+        //    throw new IllegalArgumentException("Server name can't contain /");
+        //}
         servers.put(fullName, server);
         serverNames.add(fullName);
     }
