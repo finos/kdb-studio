@@ -13,11 +13,11 @@ repositories {
 }
 
 dependencies {
-    compile group: 'org.netbeans.api', name: 'org-openide-awt', version: 'RELEASE113'
-    compile group: 'org.jfree', name: 'jfreechart', version: '1.0.14'
-    compile group: 'org.apache.poi', name: 'poi', version: '4.1.2'
-    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '4.1.2'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.11.2'
+    compile group: 'org.netbeans.api', name: 'org-openide-awt', version: 'RELEASE150'
+    compile group: 'org.jfree', name: 'jfreechart', version: '1.5.3'
+    compile group: 'org.apache.poi', name: 'poi', version: '5.2.3'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '5.2.3'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version:'2.14.0-rc2'
 }
 
 sourceSets {
