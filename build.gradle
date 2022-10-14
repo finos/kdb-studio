@@ -2,6 +2,7 @@ apply plugin: 'idea'
 //and standard one
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'org.owasp.dependencycheck'
 
 compileJava {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -10,6 +11,20 @@ compileJava {
 
 repositories {
     mavenCentral()
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.owasp:dependency-check-gradle:7.1.1'
+    }
+}
+
+dependencyCheck {
+    failBuildOnCVSS=5
+    suppressionFile="allow-list.xml"
 }
 
 dependencies {
