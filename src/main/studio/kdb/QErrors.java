@@ -15,7 +15,7 @@ public class QErrors {
         map.put("access","attempt to read files above directory or run system commands in -u 1 mode, or failed usr/pwd");
         map.put("assign","attempt to assign a value to a reserved word");
         map.put("badmsg","failure in IPC validation");
-        map.put("badtail","incompelte transaction at end of log file, get good (count;length) with -11!(-2;`:file)");
+        map.put("badtail","incomplete transaction at end of log file, get good (count;length) with -11!(-2;`:file)");
         map.put("cast","value not in enumeration");
         //map.put("close handle.*","handle was closed by the remote while a msg was expected"); //this would require regex matching
         //map.put("conn","too many incoming connections (1022 max)"); //this is a server-side error, shouldn't happen during a client query
