@@ -98,6 +98,8 @@ public class TabPanel extends JPanel {
             String hint = QErrors.lookup(queryResult.getError().getMessage());
             hint = hint == null ? "" : "\nStudio Hint: Possibly this error refers to " + hint;
             textArea.setText("An error occurred during execution of the query.\nThe server sent the response:\n" + queryResult.getError().getMessage() + hint);
+            Font defaultFont = textArea.getFont();
+            textArea.setFont(new Font(defaultFont.getName(), defaultFont.getStyle(), Config.getInstance().getFontSize()));
             textArea.setForeground(Color.RED);
             textArea.setEditable(false);
             component = new JScrollPane(textArea);
