@@ -138,10 +138,16 @@ public class KTest {
     public void testCharacterToString() throws Exception {
         check(new K.KCharacter(' '), " ", "\" \"");
         check(new K.KCharacter('a'), "a", "\"a\"");
+        check(new K.KCharacter('\000'), "\000", "\"\\000\"");
+        check(new K.KCharacter('\\'), "\\", "\"\\\\\"");
+        check(new K.KCharacter('"'), "\"", "\"\\\"\"");
 
         check(new K.KCharacterVector(" a"), " a", "\" a\"");
         check(new K.KCharacterVector(""), "", "\"\"");
         check(new K.KCharacterVector("a"), "enlist a", "enlist \"a\"");
+        check(new K.KCharacterVector(" \000"), " \000", "\" \\000\"");
+        check(new K.KCharacterVector(" \\"), " \\", "\" \\\\\"");
+        check(new K.KCharacterVector(" \""), " \"", "\" \\\"\"");
     }
 
     @Test
