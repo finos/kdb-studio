@@ -556,13 +556,14 @@ public class StudioPanel extends JPanel implements WindowListener {
         }
     }
 
-    private void setServer(Server server) {
-        if (server == null) return;
+    public void setServer(Server server) {
         editor.setServer(server);
 
         if (!loading) {
-            CONFIG.addServerToHistory(server);
-            serverHistory.add(server);
+            if (server != null) {
+                CONFIG.addServerToHistory(server);
+                serverHistory.add(server);
+            }
 
             refreshTitle();
             rebuildAll();
