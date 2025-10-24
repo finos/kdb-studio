@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.swing.tree.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -72,6 +71,8 @@ public class Config {
     public static final String EXPORT_FILE_CHOOSER = configDefault("exportFileChooser", ConfigType.FILE_CHOOSER, new FileChooserConfig());
     public static final String SERVERLIST_FILE_CHOOSER = configDefault("serverListFileChooser", ConfigType.FILE_CHOOSER, new FileChooserConfig());
     public static final String THEME_FILE_CHOOSER = configDefault("themeListFileChooser", ConfigType.FILE_CHOOSER, new FileChooserConfig());
+
+    public static String SERVER_LIST_LOCATION;
 
     private static final String END_OF_WORKSPACE_MARKER = "endOfWorkspace";
 
@@ -359,6 +360,7 @@ public class Config {
                 }
             }
         }
+        migrateServersFromConfigToFilesystem(filename);
         checkForUpgrade();
         initServers();
         initServerHistory();
@@ -457,6 +459,9 @@ public class Config {
             for (Enumeration<TreeNode> e = root.children(); e.hasMoreElements();) {
                 children.add(serverTreeToObj((ServerTreeNode) e.nextElement()));
             }
+        } else{
+            Server server = root.getServer();
+            result.put("id", server.getId());
         }
         return result;
     }
@@ -474,9 +479,12 @@ public class Config {
         objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         Map<String,Object> cfg = new LinkedHashMap<>();
         ArrayList<Map<String,Object>> svs = new ArrayList<>();
+        int i = 0;
         for (Server s : servers.values()) {
             LinkedHashMap<String,Object> ps = new LinkedHashMap<>();
             svs.add(ps);
+            s.setId(String.valueOf(i++));
+            ps.put("id", s.getId());
             ps.put("name", s.getName());
             ps.put("host", s.getHost());
             ps.put("port", s.getPort());
@@ -514,15 +522,13 @@ public class Config {
                 }
             }
         } else {
-            if (jn.has("name")) {
-                String name = jn.get("name").asText("");
-                if (name.length() > 0) {
-                    if (serverMap.containsKey(name)) {
-                        Server s = serverMap.get(name);
-                        s.setFolder(tn);
-                        addServer(s);
-                        serverMap.remove(s);
-                    }
+            if (jn.has("id") || jn.has("name")) {
+                String id = jn.has("id") ? jn.get("id").asText("") : jn.get("name").asText("");
+                if (serverMap.containsKey(id)) {
+                    Server s = serverMap.get(id);
+                    s.setFolder(tn);
+                    addServer(s);
+                    serverMap.remove(id);
                 }
             }
         }
@@ -532,7 +538,7 @@ public class Config {
         ObjectMapper objectMapper = new ObjectMapper();
         StringBuilder sb = new StringBuilder();
         ArrayList<String> alreadyExist = new ArrayList<>();
-        ArrayList<Integer> noName = new ArrayList<>();
+        ArrayList<Integer> noId = new ArrayList<>();
         try {
             JsonNode root = objectMapper.readTree(f);
             if (!root.isObject()) return "JSON root node is not an object";
@@ -542,23 +548,28 @@ public class Config {
             JsonNode serverTreeNode = root.get("serverTree");
             if (!serversNode.isArray()) return "\"servers\" node is not an array";
             HashSet<String> existingServers = new HashSet<>();
-            for (Server s : servers.values()) existingServers.add(s.getName());
+            for (Server s : servers.values()) existingServers.add(s.getId());
             HashMap<String, Server> serverMap = new HashMap<>();
             int i=0;
             for (JsonNode serverNode : (Iterable<JsonNode>) ()->serversNode.elements()) {
                 if (!serverNode.isObject()) {
                     sb.append("Non-object found inside \"servers\" array at index "+i+"\n");
-                } else if (!serverNode.has("name")) {
-                    sb.append("Server at index "+i+" has no name\n");
                 } else {
-                    String sname = serverNode.get("name").asText();
-                    if (sname.length() == 0) {
-                        noName.add(i);
-                    } else if (existingServers.contains(sname)) {
-                        alreadyExist.add(sname);
+                    String sId = "";
+                    if (serverNode.has("id")) {
+                        sId = serverNode.get("id").asText("");
+                    } else if (serverNode.has("name")) {
+                        sId = serverNode.get("name").asText("");
+                    } else {
+                        noId.add(i);
+                    }
+
+                    if (existingServers.contains(sId)) {
+                        alreadyExist.add(sId);
                     } else {
                         Server s = new Server();
-                        s.setName(sname);
+                        s.setId(sId);
+                        if (serverNode.has("name")) s.setName(serverNode.get("name").asText(sId));
                         if (serverNode.has("host")) s.setHost(serverNode.get("host").asText(""));
                         if (serverNode.has("port")) s.setPort(serverNode.get("port").asInt(0));
                         if (serverNode.has("username")) s.setUsername(serverNode.get("username").asText(""));
@@ -571,7 +582,7 @@ public class Config {
                                 s.setBackgroundColor(new Color(color.get(0).asInt(255),color.get(1).asInt(255),color.get(2).asInt(255)));
                             }
                         }
-                        serverMap.put(sname, s);
+                        serverMap.put(sId, s);
                     }
                 }
                 ++i;
@@ -579,8 +590,8 @@ public class Config {
             if (serverTreeNode.isObject()) {
                 importServerTreeFromJSON(serverMap, true, serverTreeNode, serverTree);
             }
-            if (0<noName.size()) sb.append("The servers at the following indices have no names: "+noName);
-            if (0<alreadyExist.size()) sb.append("The following servers already exist and were not imported: "+alreadyExist);
+            if (!noId.isEmpty()) sb.append("The servers at the following indices have no id: "+noId);
+            if (!alreadyExist.isEmpty()) sb.append("The following servers already exist and were not imported: "+alreadyExist);
         } catch(IOException e) {
             return e.toString();
         }
@@ -762,7 +773,7 @@ public class Config {
         return initServerFromKey("" + number);
     }
 
-    private void initServers() {
+    private void initServersFromProperties() {
         serverNames = new ArrayList<>();
         serverTree = new ServerTreeNode();
         servers = new HashMap<>();
@@ -791,6 +802,118 @@ public class Config {
             }
         }
         return number;
+    }
+
+    private void migrateServersFromConfigToFilesystem(String filename) {
+        SERVER_LIST_LOCATION = p.getProperty("serverListLocation");
+        if(Objects.isNull(SERVER_LIST_LOCATION) || SERVER_LIST_LOCATION.isEmpty()) {
+            initServersFromProperties();
+            SERVER_LIST_LOCATION = filename.replace("studio.properties", "serverList");
+
+            p.setProperty("serverListLocation", SERVER_LIST_LOCATION);
+            save();
+
+            writeServerPropertiesToFiles(servers, SERVER_LIST_LOCATION);
+            removeServerPropertiesFromConfig();
+        }
+    }
+
+    private void writeServerPropertiesToFiles(Map<String, Server> serverMap, String basePath) {
+        for (Map.Entry<String, Server> entry : serverMap.entrySet()) {
+            Server server = entry.getValue();
+            String folderName = server.getFolder().getName();
+            Path folderPath = Paths.get(basePath, folderName);
+
+            if (!Files.exists(folderPath)) {
+                try {
+                    Files.createDirectories(folderPath);
+                } catch (IOException e) {
+                    log.error("Could not create a folder: " + folderPath, e);
+                }
+            }
+
+            String fileName = server.getName() + ".properties";
+            Path filePath = folderPath.resolve(fileName);
+            Properties properties = server.getAsStringProperties();
+
+            try (OutputStream out = Files.newOutputStream(filePath)) {
+                properties.store(out, "Auto-generated by Studio for kdb+");
+            } catch (IOException e) {
+                log.error("Could not save configuration to {}", filePath, e);
+            }
+        }
+    }
+
+    private void initServers() {
+        serverNames = new ArrayList<>();
+        serverTree = new ServerTreeNode();
+        servers = new HashMap<>();
+
+        loadServersRecursively(Paths.get(SERVER_LIST_LOCATION), serverTree);
+    }
+
+    private void loadServersRecursively(Path dir, ServerTreeNode parentNode) {
+        try (Stream<Path> paths = Files.list(dir).sorted(Comparator.naturalOrder())) {
+            List<Path> directories = new ArrayList<>();
+            List<Path> files = new ArrayList<>();
+
+            paths.forEach(path -> {
+                if (Files.isDirectory(path)) {
+                    directories.add(path);
+                } else if (path.toString().endsWith(".properties")) {
+                    files.add(path);
+                }
+            });
+
+            for (Path directory : directories) {
+                ServerTreeNode folderNode = parentNode.add(directory.getFileName().toString());
+                loadServersRecursively(directory, folderNode);
+            }
+
+            for (Path file : files) {
+                loadServerFromFile(file, parentNode);
+            }
+        } catch (IOException e) {
+            log.error("Could not initiate directory load", e);
+        }
+    }
+
+    private void loadServerFromFile(Path filePath, ServerTreeNode parentNode) {
+        try {
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(filePath.toFile()));
+
+            String name = properties.getProperty("NAME");
+            String host = properties.getProperty("HOST");
+            int port = Integer.parseInt(properties.getProperty("PORT"));
+            String username = properties.getProperty("USERNAME");
+            String password = properties.getProperty("PASSWORD");
+            boolean useTLS = Boolean.parseBoolean(properties.getProperty("USETLS"));
+            String authMechanism = properties.getProperty("AUTHENTICATION_MECHANISM");
+            Color backgroundColor = Objects.isNull(properties.getProperty("BACKGROUND_COLOR")) || properties.getProperty("BACKGROUND_COLOR").isEmpty() ?
+                    Color.WHITE : Color.decode("#" + properties.getProperty("BACKGROUND_COLOR"));
+
+            Server server = new Server(name, host, port, username, password, backgroundColor, authMechanism, useTLS);
+            servers.put(name, server);
+
+            ServerTreeNode serverNode = parentNode.add(server);
+            server.setFolder((ServerTreeNode) serverNode.getParent());
+            serverNames.add(name);
+        } catch (IOException e) {
+            log.error("Could not load servers from the file system", e);
+        }
+    }
+
+    private void removeServerPropertiesFromConfig() {
+        Set<String> propertyNames = p.stringPropertyNames();
+        Set<String> serverProperties = propertyNames.stream()
+                .filter(name -> name.startsWith("server.") || name.startsWith("serverTree."))
+                .collect(Collectors.toSet());
+
+        for (String serverProperty : serverProperties) {
+            p.remove(serverProperty);
+        }
+        save();
     }
 
     private void saveAllServers() {

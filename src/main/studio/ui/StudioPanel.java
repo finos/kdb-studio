@@ -651,7 +651,7 @@ public class StudioPanel extends JPanel implements WindowListener {
 
         addServerAction = UserAction.create(I18n.getString("Add"), Util.ADD_SERVER_ICON, "Configure a new server",
                 KeyEvent.VK_A, null, e -> {
-                    AddServerForm f = new AddServerForm(frame);
+                    AddServerForm f = new AddServerForm(frame, null);
                     f.alignAndShow();
                     if (f.getResult() == ACCEPTED) {
                         Server s = f.getServer();

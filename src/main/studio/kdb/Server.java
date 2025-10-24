@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Properties;
 
 public class Server {
+    private String id;
     private String authenticationMechanism;
     private Color backgroundColor = Color.white;
     private String name = "";
@@ -25,6 +26,19 @@ public class Server {
         p.put("USERNAME", username);
         p.put("PASSWORD", password);
         p.put("USETLS", useTLS);
+        return p;
+    }
+
+    public Properties getAsStringProperties() {
+        Properties p = new Properties();
+        p.put("NAME", name);
+        p.put("HOST", host);
+        p.put("PORT", Integer.toString(port));
+        p.put("USERNAME", username);
+        p.put("PASSWORD", password);
+        p.put("USETLS", Boolean.toString(useTLS));
+        p.put("AUTHENTICATION_MECHANISM", authenticationMechanism);
+        p.put("BACKGROUND_COLOR", String.format("%02X%02X%02X", backgroundColor.getRed(), backgroundColor.getGreen(), backgroundColor.getBlue()));
         return p;
     }
 
@@ -112,6 +126,10 @@ public class Server {
         this.useTLS = useTLS;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public void setHost(String host) {
         this.host = host;
     }
@@ -122,6 +140,10 @@ public class Server {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getName() {

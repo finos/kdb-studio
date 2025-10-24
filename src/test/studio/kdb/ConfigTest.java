@@ -51,19 +51,25 @@ public class ConfigTest {
 
     @Test
     public void addServerSameName() {
-        Server server1 = new Server("testServer1", "localhost",1112,
+        Server server1 = new Server("testServer1", "localhost",1111,
                 "user", "pwd", Color.WHITE, DefaultAuthenticationMechanism.NAME, false);
         server1.setFolder(config.getServerTree().add("sameNameTestFolder"));
 
-        Server server2 = new Server("testServer1", "localhost",1113,
+        Server server2 = new Server("testServer1", "localhost",1112,
                 "user", "pwd", Color.WHITE, DefaultAuthenticationMechanism.NAME, false);
         server2.setFolder(config.getServerTree().add("sameNameTestFolder"));
+
+        Server server3 = new Server("testServer1", "localhost",1113,
+                "user", "pwd", Color.WHITE, DefaultAuthenticationMechanism.NAME, false);
+        server3.setFolder(config.getServerTree().add("differentNameTestFolder"));
 
         config.addServers(false, server1);
         assertThrows(IllegalArgumentException.class, ()->config.addServer(server2) );
 
-        assertEquals(1, config.getServerNames().size());
-        assertEquals(1, config.getServerTree().getChild("sameNameTestFolder").getChildCount() );
+        config.addServers(false, server3);
+        assertEquals(2, config.getServerNames().size());
+        assertEquals(1, config.getServerTree().getChild("sameNameTestFolder").getChildCount());
+        assertEquals(1, config.getServerTree().getChild("differentNameTestFolder").getChildCount());
         assertEquals(server1.getPort(), config.getServer("sameNameTestFolder/testServer1").getPort());
     }
 

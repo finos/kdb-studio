@@ -5,6 +5,7 @@ import studio.core.Credentials;
 import studio.kdb.Config;
 import studio.kdb.Server;
 import studio.core.AuthenticationManager;
+import studio.kdb.ServerTreeNode;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -21,6 +22,7 @@ import static javax.swing.LayoutStyle.ComponentPlacement.RELATED;
 public class ServerForm extends EscapeDialog {
     private Server s;
     private String originalName;
+    private ServerTreeNode folder;
 
     public ServerForm(Window frame, String title, Server server){
         super(frame, title);
@@ -29,6 +31,7 @@ public class ServerForm extends EscapeDialog {
         initComponents();
 
         originalName = s.getName();
+        folder = s.getFolder();
         logicalName.setText(s.getName());
         hostname.setText(s.getHost());
         username.setText(s.getUsername());
@@ -264,7 +267,7 @@ public class ServerForm extends EscapeDialog {
         boolean clash = false;
         if (!originalName.equals(newName)) {
             for (Server server : Config.getInstance().getServers()) {
-                if (newName.equals(server.getName())) {
+                if (newName.equals(server.getName()) && folder.equals(server.getFolder())) {
                     clash = true;
                     break;
                 }
@@ -273,7 +276,7 @@ public class ServerForm extends EscapeDialog {
 
         if(clash)
         {
-            StudioOptionPane.showError(this, "A server already exists with that name.", "Studio for kdb+");
+            StudioOptionPane.showError(this, "A server already exists with that name in the current folder.", "Studio for kdb+");
             logicalName.requestFocus();
             return;
         }

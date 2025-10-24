@@ -169,6 +169,18 @@ public class ServerTreeNode extends DefaultMutableTreeNode {
         }
     }
 
+    public boolean isNodeDescendant(ServerTreeNode node) {
+        if (node == null) {
+            return false;
+        }
+
+        if (node == this) {
+            return true;
+        }
+
+        return isNodeDescendant((ServerTreeNode) node.getParent());
+    }
+
     @Override
     public String toString() {
         return isFolder() ? getFolder() : getServer().toString();
